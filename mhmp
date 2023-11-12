@@ -1,0 +1,4 @@
+import ctypes
+ctypes.windll.kernel32.SetConsoleTitleW("mhm")
+from mhm.common import main
+main()
