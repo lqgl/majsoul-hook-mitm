@@ -40,7 +40,7 @@ cd majsoul-hook-mitm
 配置国内镜像源（可选）
 
 ```bash
-pip config set global.index-url https://mirror.nju.edu.cn/pypi/web/simple
+python -m pip config set global.index-url https://mirror.nju.edu.cn/pypi/web/simple
 ```
 
 安装依赖
@@ -58,9 +58,9 @@ python -m mhm
 
 ## 配置文件
 
-首次启动 mhm 会自动生成配置文件 _settings.json_
+首次启动 mhm 会自动生成配置文件 conf.json
 
-可以编辑此文件以根据需求自定义设置，以下表格解释了 _plugin_ 可用的配置选项：
+可以编辑此文件以根据需求自定义设置，以下表格解释了 plugin 可用的配置选项：
 
 | 释义         | 键               | 可用值        |
 | ------------ | ---------------- | ------------- |
