@@ -260,7 +260,7 @@ class SkinPlugin(Plugin):
         self.account["avatar_id"] = self.character["skin"]
         self.save()
 
-        notify = Msg.Notify(
+        notify = Msg.notify(
             data={
                 "update": {
                     "character": {

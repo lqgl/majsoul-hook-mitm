@@ -3,6 +3,7 @@ import base64
 from struct import unpack, pack
 from enum import Enum
 from google.protobuf.json_format import MessageToDict, ParseDict
+from google.protobuf.message import Message
 from mitmproxy import http, ctx
 from dataclasses import dataclass
 
@@ -20,9 +21,7 @@ from . import liqi_pb2 as pb
 
 
 class MsgType(Enum):
-    """
-    Game websocket message type
-    """
+    """Game websocket message type"""
 
     Notify = 1
     Req = 2
@@ -31,10 +30,9 @@ class MsgType(Enum):
 
 @dataclass
 class Msg:
-    """
-    Game websocket message struct
-    """
+    """Game websocket message struct"""
 
+    prototype: Message
     type: MsgType
     data: dict
     method: str
@@ -48,16 +46,19 @@ class Msg:
         self.func = "_".join([*self.method.split("."), self.type.name])
 
     @classmethod
-    def Notify(cls, data: dict, method: str, id: int = -1):
-        return cls(MsgType.Notify, data, method, id)
+    def notify(cls, data: dict, method: str, id: int = -1):
+        prototype = Proto.getPrototype(method, MsgType.Notify)
+        return cls(prototype, MsgType.Notify, data, method, id)
 
     @classmethod
-    def Req(cls, data: dict, method: str, id: int):
-        return cls(MsgType.Req, data, method, id)
+    def req(cls, data: dict, method: str, id: int):
+        prototype = Proto.getPrototype(method, MsgType.Req)
+        return cls(prototype, MsgType.Req, data, method, id)
 
     @classmethod
-    def Res(cls, data: dict, method: str, id: int):
-        return cls(MsgType.Res, data, method, id)
+    def res(cls, data: dict, method: str, id: int):
+        prototype = Proto.getPrototype(method, MsgType.Res)
+        return cls(prototype, MsgType.Res, data, method, id)
 
 
 class Plugin:
@@ -83,7 +84,7 @@ class Plugin:
         flow.websocket.messages[-1].drop()
 
         # compose response
-        res_msg = Msg.Res(
+        res_msg = Msg.res(
             res_data,
             req_msg.method,
             req_msg.id,
@@ -109,9 +110,8 @@ class Proto:
         if msg_type == MsgType.Notify:
             msg_block = fromProtobuf(buf[1:])
             method_name = msg_block[0]["data"].decode()
-            _, lq, message_name = method_name.split(".")
-            liqi_pb2_notify = getattr(pb, message_name)
-            proto_obj = liqi_pb2_notify.FromString(msg_block[1]["data"])
+            prototype = self.getPrototype(method_name, msg_type)
+            proto_obj = prototype.FromString(msg_block[1]["data"])
             dict_obj = MessageToDict(
                 proto_obj,
                 preserving_proto_field_name=True,
@@ -137,12 +137,8 @@ class Proto:
                 assert len(msg_block) == 2
                 assert msg_id not in self.res_type
                 method_name = msg_block[0]["data"].decode()
-                _, lq, service, rpc = method_name.split(".")
-                method_desc = pb.DESCRIPTOR.services_by_name[service].methods_by_name[
-                    rpc
-                ]
-                liqi_pb2_req = getattr(pb, method_desc.input_type.name)
-                proto_obj = liqi_pb2_req.FromString(msg_block[1]["data"])
+                prototype = self.getPrototype(method_name, msg_type)
+                proto_obj = prototype.FromString(msg_block[1]["data"])
                 dict_obj = MessageToDict(
                     proto_obj,
                     preserving_proto_field_name=True,
@@ -151,13 +147,13 @@ class Proto:
 
                 self.res_type[msg_id] = (
                     method_name,
-                    getattr(pb, method_desc.output_type.name),
+                    self.getPrototype(method_name, MsgType.Res),
                 )
             elif msg_type == MsgType.Res:
                 assert len(msg_block[0]["data"]) == 0
                 assert msg_id in self.res_type
-                method_name, liqi_pb2_res = self.res_type.pop(msg_id)
-                proto_obj = liqi_pb2_res.FromString(msg_block[1]["data"])
+                method_name, prototype = self.res_type.pop(msg_id)
+                proto_obj = prototype.FromString(msg_block[1]["data"])
                 dict_obj = MessageToDict(
                     proto_obj,
                     preserving_proto_field_name=True,
@@ -175,11 +171,12 @@ class Proto:
                         )
                         action["data"] = action_dict_obj
         self.tot += 1
-        return Msg(msg_type, dict_obj, method_name, msg_id)
+        return Msg(prototype, msg_type, dict_obj, method_name, msg_id)
 
-    @staticmethod
-    def compose(msg: Msg) -> bytes:
+    @classmethod
+    def compose(cls, msg: Msg) -> bytes:
         head = msg.type.value.to_bytes(length=1, byteorder="little")
+        proto_obj = ParseDict(js_dict=msg.data, message=msg.prototype())
         msg_block = [{"id": 1, "type": "string"}, {"id": 2, "type": "string"}]
 
         if msg.type == MsgType.Notify:
@@ -187,36 +184,32 @@ class Proto:
                 """Not yet supported"""
                 raise NotImplementedError
 
-            _, lq, message_name = msg.method.split(".")
-            liqi_pb2_notify = getattr(pb, message_name)
-            protod = ParseDict(js_dict=msg.data, message=liqi_pb2_notify())
             msg_block[0]["data"] = msg.method.encode()
-            msg_block[1]["data"] = protod.SerializeToString()
+            msg_block[1]["data"] = proto_obj.SerializeToString()
             return head + toProtobuf(msg_block)
+        elif msg.type == MsgType.Req:
+            msg_block[0]["data"] = msg.method.encode()
+            msg_block[1]["data"] = proto_obj.SerializeToString()
+            return head + pack("<H", msg.id) + toProtobuf(msg_block)
+        elif msg.type == MsgType.Res:
+            msg_block[0]["data"] = b""
+            msg_block[1]["data"] = proto_obj.SerializeToString()
+            return head + pack("<H", msg.id) + toProtobuf(msg_block)
+
+    @staticmethod
+    def getPrototype(method_name: str, msg_type: MsgType):
+        if msg_type == MsgType.Notify:
+            _, lq, message_name = method_name.split(".")
+            return getattr(pb, message_name)
 
         else:
-            msg_id = msg.id
-            if msg.type == MsgType.Req:
-                _, lq, service, rpc = msg.method.split(".")
-                method_desc = pb.DESCRIPTOR.services_by_name[service].methods_by_name[
-                    rpc
-                ]
-                liqi_pb2_req = getattr(pb, method_desc.input_type.name)
-                protod = ParseDict(js_dict=msg.data, message=liqi_pb2_req())
-                msg_block[0]["data"] = msg.method.encode()
-                msg_block[1]["data"] = protod.SerializeToString()
-                return head + pack("<H", msg_id) + toProtobuf(msg_block)
+            _, lq, service, rpc = method_name.split(".")
+            method_desc = pb.DESCRIPTOR.services_by_name[service].methods_by_name[rpc]
 
-            elif msg.type == MsgType.Res:
-                _, lq, service, rpc = msg.method.split(".")
-                method_desc = pb.DESCRIPTOR.services_by_name[service].methods_by_name[
-                    rpc
-                ]
-                liqi_pb2_res = getattr(pb, method_desc.output_type.name)
-                protod = ParseDict(js_dict=msg.data, message=liqi_pb2_res())
-                msg_block[0]["data"] = b""
-                msg_block[1]["data"] = protod.SerializeToString()
-                return head + pack("<H", msg_id) + toProtobuf(msg_block)
+            if msg_type == MsgType.Req:
+                return getattr(pb, method_desc.input_type.name)
+            elif msg_type == MsgType.Res:
+                return getattr(pb, method_desc.output_type.name)
 
     @classmethod
     def manipulate(cls, flow: http.HTTPFlow, msg: Msg) -> None:
