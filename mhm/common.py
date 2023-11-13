@@ -53,7 +53,7 @@ def main():
             loop.create_task(start_proxy())
             logger.info(f"[i]mitmdump launched @ {len(conf['mitmdump']['mode'])} mode")
 
-        if "proxinject" in conf:
+        if conf.get("proxinject", None):
             loop.create_task(start_inject())
             logger.info(f"[i]proxinject launched @ {conf['proxinject']['set-proxy']}")
 
