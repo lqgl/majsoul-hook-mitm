@@ -183,6 +183,16 @@ def useTitle(flow: http.HTTPFlow, msg: Msg):
         msg.respond(flow)
 
 
+@listen(MsgType.Req, ".lq.Lobby.modifyNickname")
+def modifyNickname(flow: http.HTTPFlow, msg: Msg):
+    # 修改昵称时
+    if skin := Skin.get(getattr(flow, "account_id")):
+        skin.account["nickname"] = msg.data["nickname"]
+        skin.save()
+
+        msg.respond(flow)
+
+
 @listen(MsgType.Req, ".lq.Lobby.setLoadingImage")
 def setLoadingImage(flow: http.HTTPFlow, msg: Msg):
     # 选择加载图时
