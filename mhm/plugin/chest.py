@@ -2,7 +2,8 @@ from mitmproxy import http
 from random import random, choice
 
 from mhm import conf
-from mhm.proto.liqi import Plugin, Msg
+from mhm.events import listen
+from mhm.proto.liqi import Msg, MsgType
 
 DEFAULT_CHEST = [
     # CHARACTERS
@@ -55,18 +56,17 @@ def chest(count: int, chest_id: int):
     }
 
 
-class ChestPlugin(Plugin):
-    def _lq_Lobby_fetchAccountInfo_Res(self, flow: http.HTTPFlow, msg: Msg) -> bool:
-        return self._lq_Lobby_login_Res(flow, msg)
+# login
+@listen(MsgType.Res, ".lq.Lobby.login")
+@listen(MsgType.Res, ".lq.Lobby.emailLogin")
+@listen(MsgType.Res, ".lq.Lobby.oauth2Login")
+# lobby refresh
+@listen(MsgType.Res, ".lq.Lobby.fetchAccountInfo")
+def login(flow: http.HTTPFlow, msg: Msg):
+    msg.data["account"]["platform_diamond"] = [{"id": 100001, "count": 66666}]
+    msg.amended = True
 
-    def _lq_Lobby_oauth2Login_Res(self, flow: http.HTTPFlow, msg: Msg) -> bool:
-        return self._lq_Lobby_login_Res(flow, msg)
 
-    def _lq_Lobby_emailLogin_Res(self, flow: http.HTTPFlow, msg: Msg) -> bool:
-        return self._lq_Lobby_login_Res(flow, msg)
-
-    def _lq_Lobby_login_Res(self, flow: http.HTTPFlow, msg: Msg) -> bool:
-        msg.data["account"]["platform_diamond"] = [{"id": 100001, "count": 66666}]
-
-    def _lq_Lobby_openChest_Req(self, flow: http.HTTPFlow, msg: Msg) -> bool:
-        return super().reply(flow, msg, chest(msg.data["count"], msg.data["chest_id"]))
+@listen(MsgType.Req, ".lq.Lobby.openChest")
+def openChest(flow: http.HTTPFlow, msg: Msg):
+    msg.respond(flow, chest(msg.data["count"], msg.data["chest_id"]))

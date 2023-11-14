@@ -38,63 +38,47 @@ class Msg:
     method: str
 
     id: int = -1
+    amended: bool = False
+    responded: bool = False
 
     def __post_init__(self):
-        """
-        ('.lq.FastTest.authGame', MsgType.Req) => _lq_FastTest_authGame_Req
-        """
-        self.func = "_".join([*self.method.split("."), self.type.name])
+        self.key = (self.type, self.method)
 
     @classmethod
-    def notify(cls, data: dict, method: str, id: int = -1):
+    def notify(cls, data: dict, method: str):
         prototype = Proto.getPrototype(method, MsgType.Notify)
-        return cls(prototype, MsgType.Notify, data, method, id)
+        return cls(prototype, MsgType.Notify, data, method)
 
     @classmethod
     def req(cls, data: dict, method: str, id: int):
-        prototype = Proto.getPrototype(method, MsgType.Req)
+        prototype, _ = Proto.getPrototype(method, MsgType.Req)
         return cls(prototype, MsgType.Req, data, method, id)
 
     @classmethod
     def res(cls, data: dict, method: str, id: int):
-        prototype = Proto.getPrototype(method, MsgType.Res)
+        _, prototype = Proto.getPrototype(method, MsgType.Res)
         return cls(prototype, MsgType.Res, data, method, id)
 
+    def amend(self, flow: http.HTTPFlow):
+        Proto.manipulate(flow, self)
 
-class Plugin:
-    def handle(self, flow: http.HTTPFlow, msg: Msg) -> bool:
-        """
-        Try invoking `getattr(self, msg.func)(flow, msg)`, return True -> Skipped | return False -> Manipulated
-        """
-        if hasattr(self, msg.func):
-            return bool(getattr(self, msg.func)(flow, msg))
-        else:
-            return True
+    def respond(self, flow: http.HTTPFlow, res_data: dict = {}, notifys: list = []):
+        assert self.type is MsgType.Req
+        assert not self.responded
 
-    def reply(
-        self,
-        flow: http.HTTPFlow,
-        req_msg: Msg,
-        res_data: dict = dict(),
-        notifys: list[dict] = list(),
-    ) -> bool:
-        assert req_msg.type is MsgType.Req
+        res_msg = self.res(
+            res_data,
+            self.method,
+            self.id,
+        )
 
         # drop latest request
         flow.websocket.messages[-1].drop()
 
-        # compose response
-        res_msg = Msg.res(
-            res_data,
-            req_msg.method,
-            req_msg.id,
-        )
-
         # inject messages
         Proto.inject(flow, *notifys, res_msg)
 
-        # mark as skipped
-        return True
+        self.responded = True
 
 
 class Proto:
@@ -137,7 +121,7 @@ class Proto:
                 assert len(msg_block) == 2
                 assert msg_id not in self.res_type
                 method_name = msg_block[0]["data"].decode()
-                prototype = self.getPrototype(method_name, msg_type)
+                prototype, res_prototype = self.getPrototype(method_name, msg_type)
                 proto_obj = prototype.FromString(msg_block[1]["data"])
                 dict_obj = MessageToDict(
                     proto_obj,
@@ -147,7 +131,7 @@ class Proto:
 
                 self.res_type[msg_id] = (
                     method_name,
-                    self.getPrototype(method_name, MsgType.Res),
+                    res_prototype,
                 )
             elif msg_type == MsgType.Res:
                 assert len(msg_block[0]["data"]) == 0
@@ -206,10 +190,10 @@ class Proto:
             _, lq, service, rpc = method_name.split(".")
             method_desc = pb.DESCRIPTOR.services_by_name[service].methods_by_name[rpc]
 
-            if msg_type == MsgType.Req:
-                return getattr(pb, method_desc.input_type.name)
-            elif msg_type == MsgType.Res:
-                return getattr(pb, method_desc.output_type.name)
+            return (
+                getattr(pb, method_desc.input_type.name),
+                getattr(pb, method_desc.output_type.name),
+            )
 
     @classmethod
     def manipulate(cls, flow: http.HTTPFlow, msg: Msg) -> None:

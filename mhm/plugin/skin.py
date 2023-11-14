@@ -5,13 +5,232 @@ from random import choice, randint
 from mitmproxy import http
 
 from mhm import ROOT, conf
-from mhm.proto.liqi import Plugin, Msg
+from mhm.events import listen
+from mhm.proto.liqi import Msg, MsgType
 
 
 def _update(dict_a: dict, dict_b: dict, *exclude: str) -> None:
     for key, value in dict_b.items():
         if key not in exclude and key in dict_a:
             dict_a[key] = value
+
+
+"""Response"""
+
+
+@listen(MsgType.Res, ".lq.Lobby.login")
+@listen(MsgType.Res, ".lq.Lobby.emailLogin")
+@listen(MsgType.Res, ".lq.Lobby.oauth2Login")  # login
+def login(flow: http.HTTPFlow, msg: Msg):
+    skin = Skin.one(getattr(flow, "account_id"))
+
+    # 配置文件
+    skin.profile = skin.info.path / f"{msg.data['account_id']}.json"
+    # 保存原角色、皮肤、昵称
+    avatar_id = msg.data["account"]["avatar_id"]
+    character_id = (int)((avatar_id - 400000) / 100 + 200000)
+    skin.original_char = (character_id, avatar_id)
+
+    if exists(skin.profile):
+        skin.read()
+        _update(msg.data["account"], skin.account)
+    else:
+        skin.init()
+        _update(skin.account, msg.data["account"])
+
+    msg.amended = True
+
+
+@listen(MsgType.Res, ".lq.Lobby.joinRoom")
+@listen(MsgType.Res, ".lq.Lobby.fetchRoom")
+@listen(MsgType.Res, ".lq.Lobby.createRoom")  # login
+def joinRoom(flow: http.HTTPFlow, msg: Msg):
+    # 在加入、获取、创建房间时修改己方头衔、立绘、角色
+    if "room" not in msg.data:
+        return True
+    for person in msg.data["room"]["persons"]:
+        if skin := Skin.get(person["account_id"]):
+            _update(person, skin.account)
+            msg.amended = True
+
+
+@listen(MsgType.Res, ".lq.Lobby.fetchBagInfo")
+def fetchBagInfo(flow: http.HTTPFlow, msg: Msg):
+    # 添加物品
+    if skin := Skin.get(getattr(flow, "account_id")):
+        msg.data["bag"]["items"].extend(skin.info.items)
+        msg.amended = True
+
+
+@listen(MsgType.Res, ".lq.Lobby.fetchTitleList")
+def fetchTitleList(flow: http.HTTPFlow, msg: Msg):
+    # 添加头衔
+    if skin := Skin.get(getattr(flow, "account_id")):
+        msg.data["title_list"] = skin.info.titles
+        msg.amended = True
+
+
+@listen(MsgType.Res, ".lq.Lobby.fetchAllCommonViews")
+def fetchAllCommonViews(flow: http.HTTPFlow, msg: Msg):
+    # 装扮本地数据替换
+    if skin := Skin.get(getattr(flow, "account_id")):
+        msg.data = skin.commonviews
+        msg.amended = True
+
+
+@listen(MsgType.Res, ".lq.Lobby.fetchCharacterInfo")
+def fetchCharacterInfo(flow: http.HTTPFlow, msg: Msg):
+    # 全角色数据替换
+    if skin := Skin.get(getattr(flow, "account_id")):
+        msg.data = skin.characters
+        msg.amended = True
+
+
+@listen(MsgType.Res, ".lq.Lobby.fetchAccountInfo")
+def fetchAccountInfo(flow: http.HTTPFlow, msg: Msg):
+    # 修改状态面板立绘、头衔
+    if skin := Skin.get(msg.data["account"]["account_id"]):
+        _update(msg.data["account"], skin.account, "loading_image")
+        msg.amended = True
+
+
+@listen(MsgType.Res, ".lq.FastTest.authGame")
+def authGame(flow: http.HTTPFlow, msg: Msg):
+    # 进入对局时
+    if skin := Skin.get(getattr(flow, "account_id")):
+        if skin.game_uuid in skin.games:
+            msg.data["players"] = skin.games[skin.game_uuid]
+        else:
+            for player in msg.data["players"]:
+                # 替换头像，角色、头衔
+                if other := Skin.get(player["account_id"]):
+                    _update(player, other.player)
+
+                    if conf["plugin"]["random_star_char"]:
+                        random_char = other.random_star_character
+                        player["character"] = random_char
+                        player["avatar_id"] = random_char["skin"]
+                # 其他玩家报菜名，对机器人无效
+                else:
+                    player["character"].update(
+                        {"level": 5, "exp": 1, "is_upgraded": True}
+                    )
+
+                skin.games[skin.game_uuid] = msg.data["players"]
+        msg.amended = True
+
+
+"""Request"""
+
+
+@listen(MsgType.Req, ".lq.FastTest.authGame")
+def enterGame(flow: http.HTTPFlow, msg: Msg):
+    # 记录当前对局 UUID
+    if skin := Skin.get(getattr(flow, "account_id")):
+        skin.game_uuid = msg.data["game_uuid"]
+
+
+@listen(MsgType.Req, ".lq.Lobby.changeMainCharacter")
+def changeMainCharacter(flow: http.HTTPFlow, msg: Msg):
+    # 修改主角色时
+    if skin := Skin.get(getattr(flow, "account_id")):
+        skin.characters["main_character_id"] = msg.data["character_id"]
+        skin.account["avatar_id"] = skin.character["skin"]
+        skin.save()
+
+        msg.respond(flow)
+
+
+@listen(MsgType.Req, ".lq.Lobby.changeCharacterSkin")
+def changeCharacterSkin(flow: http.HTTPFlow, msg: Msg):
+    # 修改角色皮肤时
+    if skin := Skin.get(getattr(flow, "account_id")):
+        skin.get_character(msg.data["character_id"])["skin"] = msg.data["skin"]
+        skin.account["avatar_id"] = skin.character["skin"]
+        skin.save()
+
+        notify = Msg.notify(
+            data={
+                "update": {
+                    "character": {
+                        "characters": [skin.get_character(msg.data["character_id"])]
+                    }
+                }
+            },
+            method=".lq.NotifyAccountUpdate",
+        )
+
+        msg.respond(flow, notifys=[notify])
+
+
+@listen(MsgType.Req, ".lq.Lobby.updateCharacterSort")
+def updateCharacterSort(flow: http.HTTPFlow, msg: Msg):
+    # 修改星标角色时
+    if skin := Skin.get(getattr(flow, "account_id")):
+        skin.characters["character_sort"] = msg.data["sort"]
+        skin.save()
+
+        msg.respond(flow)
+
+
+@listen(MsgType.Req, ".lq.Lobby.useTitle")
+def useTitle(flow: http.HTTPFlow, msg: Msg):
+    # 选择头衔时
+    if skin := Skin.get(getattr(flow, "account_id")):
+        skin.account["title"] = msg.data["title"]
+        skin.save()
+
+        msg.respond(flow)
+
+
+@listen(MsgType.Req, ".lq.Lobby.setLoadingImage")
+def setLoadingImage(flow: http.HTTPFlow, msg: Msg):
+    # 选择加载图时
+    if skin := Skin.get(getattr(flow, "account_id")):
+        skin.account["loading_image"] = msg.data["images"]
+        skin.save()
+
+        msg.respond(flow)
+
+
+@listen(MsgType.Req, ".lq.Lobby.useCommonView")
+def useCommonView(flow: http.HTTPFlow, msg: Msg):
+    # 选择装扮时
+    if skin := Skin.get(getattr(flow, "account_id")):
+        skin.commonviews["use"] = msg.data["index"]
+        skin.save()
+
+        msg.respond(flow)
+
+
+@listen(MsgType.Req, ".lq.Lobby.saveCommonViews")
+def saveCommonViews(flow: http.HTTPFlow, msg: Msg):
+    # 修改装扮时
+    if skin := Skin.get(getattr(flow, "account_id")):
+        skin.commonviews["views"][msg.data["save_index"]]["values"] = msg.data["views"]
+        skin.save()
+
+        msg.respond(flow)
+
+
+"""Notify"""
+
+
+@listen(MsgType.Notify, ".lq.NotifyRoomPlayerUpdate")
+def NotifyRoomPlayerUpdate(flow: http.HTTPFlow, msg: Msg):
+    # 房间中添加、减少玩家时修改立绘、头衔
+    for player in msg.data["player_list"]:
+        if skin := Skin.get(player["account_id"]):
+            _update(player, skin.account)
+            msg.amended = True
+
+
+@listen(MsgType.Notify, ".lq.NotifyGameFinishRewardV2")
+def NotifyGameFinishRewardV2(flow: http.HTTPFlow, msg: Msg):
+    # 终局结算时，不播放羁绊动画
+    if skin := Skin.get(getattr(flow, "account_id")):
+        msg.data["main_character"] = {"exp": 1, "add": 0, "level": 5}
+        msg.amended = True
 
 
 class SkinInfo:
@@ -52,48 +271,39 @@ class SkinInfo:
             mkdir(self.path)
 
 
-class SkinPlugin(Plugin):
-    skins: dict[int, type["SkinPlugin"]] = dict()
-    games: dict[str, dict[str, any]] = dict()
+class Skin:
+    skins: dict[int, type["Skin"]] = dict()
+    games: dict[str, dict] = dict()
     info: SkinInfo = SkinInfo()
 
-    def __init__(self) -> None:
-        self.profile: str = str()
-        self.game_uuid: str = str()
-        self.original_char: tuple[int, int] = (200001, 400101)
+    @classmethod
+    def one(cls, account_id):
+        if account_id in cls.skins:
+            skin = cls.skins[account_id]
+        else:
+            skin = cls.skins[account_id] = cls()
+        return skin
 
-        self.characters: dict[str, any] = {}
-        self.commonviews: dict[str, any] = {}
+    @classmethod
+    def get(cls, account_id):
+        return cls.skins.get(account_id)
+
+    def __init__(self) -> None:
+        self.profile = ""
+        self.game_uuid = ""
+        self.original_char = (200001, 400101)
+
+        self.characters = {}
+        self.commonviews = {}
 
         # default account structure
-        self.account: dict[str, any] = {
+        self.account = {
             "title": 0,
             "nickname": 0,
             "avatar_id": 0,
             "account_id": 0,
             "loading_image": 0,
         }
-
-    @property
-    def views(self) -> dict[str, any]:
-        return [
-            {
-                "type": 0,
-                "slot": slot["slot"],
-                "item_id_list": [],
-                "item_id": choice(slot["item_id_list"])
-                if slot["type"]
-                else slot["item_id"],
-            }
-            for slot in self.commonviews["views"][self.commonviews["use"]]["values"]
-        ]
-
-    @property
-    def avatar_frame(self) -> int:
-        for slot in self.commonviews["views"][self.commonviews["use"]]["values"]:
-            if slot["slot"] == 5:
-                return slot["item_id"]
-        return 0
 
     @property
     def random_star_character(self) -> dict[str, any]:
@@ -106,6 +316,13 @@ class SkinPlugin(Plugin):
     @property
     def random_character(self) -> dict[str, any]:
         return self.get_character(randint(200001, conf["server"]["max_charid"] - 1))
+
+    @property
+    def avatar_frame(self) -> int:
+        for slot in self.commonviews["views"][self.commonviews["use"]]["values"]:
+            if slot["slot"] == 5:
+                return slot["item_id"]
+        return 0
 
     @property
     def character(self) -> dict[str, any]:
@@ -122,6 +339,20 @@ class SkinPlugin(Plugin):
         ).update(self.account)
 
         return player
+
+    @property
+    def views(self) -> dict[str, any]:
+        return [
+            {
+                "type": 0,
+                "slot": slot["slot"],
+                "item_id_list": [],
+                "item_id": choice(slot["item_id_list"])
+                if slot["type"]
+                else slot["item_id"],
+            }
+            for slot in self.commonviews["views"][self.commonviews["use"]]["values"]
+        ]
 
     def save(self) -> None:
         with open(self.profile, "w", encoding="utf-8") as f:
@@ -221,179 +452,3 @@ class SkinPlugin(Plugin):
                 self.characters["skins"].append(skin_id)
 
         self.save()
-
-    """
-    Notify
-    """
-
-    def _lq_NotifyRoomPlayerUpdate_Notify(self, flow: http.HTTPFlow, msg: Msg):
-        for player in msg.data["player_list"]:
-            if player["account_id"] in self.skins:
-                object: SkinPlugin = self.skins[player["account_id"]]
-                _update(player, object.account)
-
-    def _lq_NotifyGameFinishRewardV2_Notify(self, flow: http.HTTPFlow, msg: Msg):
-        if msg.data.get("main_character"):
-            msg.data["main_character"]["level"] = 5
-
-    """
-    Request
-    """
-
-    def _lq_FastTest_authGame_Req(self, flow: http.HTTPFlow, msg: Msg):
-        # 记录当前对局 UUID
-        self.game_uuid = msg.data["game_uuid"]
-
-        return True
-
-    def _lq_Lobby_changeMainCharacter_Req(self, flow: http.HTTPFlow, msg: Msg):
-        # 修改主角色时
-        self.characters["main_character_id"] = msg.data["character_id"]
-        self.account["avatar_id"] = self.character["skin"]
-        self.save()
-
-        return super().reply(flow, msg)
-
-    def _lq_Lobby_changeCharacterSkin_Req(self, flow: http.HTTPFlow, msg: Msg):
-        # 修改角色皮肤时
-        self.get_character(msg.data["character_id"])["skin"] = msg.data["skin"]
-        self.account["avatar_id"] = self.character["skin"]
-        self.save()
-
-        notify = Msg.notify(
-            data={
-                "update": {
-                    "character": {
-                        "characters": [self.get_character(msg.data["character_id"])]
-                    }
-                }
-            },
-            method=".lq.NotifyAccountUpdate",
-        )
-
-        return super().reply(flow, msg, notifys=[notify])
-
-    def _lq_Lobby_updateCharacterSort_Req(self, flow: http.HTTPFlow, msg: Msg):
-        # 修改星标角色时
-        self.characters["character_sort"] = msg.data["sort"]
-        self.save()
-
-        return super().reply(flow, msg)
-
-    def _lq_Lobby_useTitle_Req(self, flow: http.HTTPFlow, msg: Msg):
-        # 选择头衔时
-        self.account["title"] = msg.data["title"]
-        self.save()
-
-        return super().reply(flow, msg)
-
-    def _lq_Lobby_setLoadingImage_Req(self, flow: http.HTTPFlow, msg: Msg):
-        # 选择加载图时
-        self.account["loading_image"] = msg.data["images"]
-        self.save()
-
-        return super().reply(flow, msg)
-
-    def _lq_Lobby_useCommonView_Req(self, flow: http.HTTPFlow, msg: Msg):
-        # 选择装扮时
-        self.commonviews["use"] = msg.data["index"]
-        self.save()
-
-        return super().reply(flow, msg)
-
-    def _lq_Lobby_saveCommonViews_Req(self, flow: http.HTTPFlow, msg: Msg):
-        # 修改装扮时
-        self.commonviews["views"][msg.data["save_index"]]["values"] = msg.data["views"]
-        self.save()
-
-        return super().reply(flow, msg)
-
-    """
-    Response
-    """
-
-    def _lq_FastTest_authGame_Res(self, flow: http.HTTPFlow, msg: Msg):
-        # 进入对局时
-        if self.game_uuid in self.games:
-            msg.data["players"] = self.games[self.game_uuid]
-        else:
-            for player in msg.data["players"]:
-                # 替换头像，角色、头衔
-                if player["account_id"] in self.skins:
-                    object: SkinPlugin = self.skins[player["account_id"]]
-                    _update(player, object.player)
-
-                    if conf["plugin"]["random_star_char"]:
-                        random_char = object.random_star_character
-                        player["character"] = random_char
-                        player["avatar_id"] = random_char["skin"]
-                # 其他玩家报菜名，对机器人无效
-                else:
-                    player["character"].update(
-                        {"level": 5, "exp": 1, "is_upgraded": True}
-                    )
-
-                self.games[self.game_uuid] = msg.data["players"]
-
-    def _lq_Lobby_fetchAccountInfo_Res(self, flow: http.HTTPFlow, msg: Msg):
-        # 修改状态面板立绘、头衔
-        if msg.data["account"]["account_id"] in self.skins:
-            object: SkinPlugin = self.skins[msg.data["account"]["account_id"]]
-            _update(msg.data["account"], object.account, "loading_image")
-
-    def _lq_Lobby_fetchCharacterInfo_Res(self, flow: http.HTTPFlow, msg: Msg):
-        # 全角色数据替换
-        msg.data = self.characters
-
-    def _lq_Lobby_fetchAllCommonViews_Res(self, flow: http.HTTPFlow, msg: Msg):
-        # 装扮本地数据替换
-        msg.data = self.commonviews
-
-    def _lq_Lobby_fetchTitleList_Res(self, flow: http.HTTPFlow, msg: Msg):
-        # 添加头衔
-        msg.data["title_list"] = self.info.titles
-
-    def _lq_Lobby_fetchBagInfo_Res(self, flow: http.HTTPFlow, msg: Msg):
-        # 添加物品
-        msg.data["bag"]["items"].extend(self.info.items)
-
-    def _lq_Lobby_fetchRoom_Res(self, flow: http.HTTPFlow, msg: Msg):
-        self._lq_Lobby_createRoom_Res(flow, msg)
-
-    def _lq_Lobby_joinRoom_Res(self, flow: http.HTTPFlow, msg: Msg):
-        self._lq_Lobby_createRoom_Res(flow, msg)
-
-    def _lq_Lobby_createRoom_Res(self, flow: http.HTTPFlow, msg: Msg):
-        # 在加入、获取、创建房间时修改己方头衔、立绘、角色
-        if "room" not in msg.data:
-            return True
-        for person in msg.data["room"]["persons"]:
-            if person["account_id"] in self.skins:
-                object: SkinPlugin = self.skins[person["account_id"]]
-                _update(person, object.account)
-
-    def _lq_Lobby_oauth2Login_Res(self, flow: http.HTTPFlow, msg: Msg):
-        self._lq_Lobby_login_Res(flow, msg)
-
-    def _lq_Lobby_emailLogin_Res(self, flow: http.HTTPFlow, msg: Msg):
-        self._lq_Lobby_login_Res(flow, msg)
-
-    def _lq_Lobby_login_Res(self, flow: http.HTTPFlow, msg: Msg):
-        # 本地配置文件
-        self.profile = self.info.path / f"{msg.data['account_id']}.json"
-
-        # 保存原角色、皮肤、昵称
-        avatar_id = msg.data["account"]["avatar_id"]
-        character_id = (int)((avatar_id - 400000) / 100 + 200000)
-        self.original_char = (character_id, avatar_id)
-
-        # 保存原账户信息
-        _update(self.account, msg.data["account"])
-
-        if exists(self.profile):
-            self.read()
-            _update(msg.data["account"], self.account)
-        else:
-            self.init()
-
-        self.skins[msg.data["account_id"]] = self

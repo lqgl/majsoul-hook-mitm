@@ -7,13 +7,46 @@ from socket import socket, AF_INET, SOCK_STREAM
 from mitmproxy import http
 
 from mhm import ROOT
-from mhm.proto.liqi import Plugin, Msg, MsgType
+from mhm.events import listen
+from mhm.proto.liqi import Msg, MsgType
 
 disable_warnings(InsecureRequestWarning)
 
 
-class AiderPlugin(Plugin):
+@listen(any)
+def handle(flow: http.HTTPFlow, msg: Msg):
+    if not hasattr(flow, "account_id"):
+        return
+
+    if msg.type is not MsgType.Req:
+        aider = Aider.one(getattr(flow, "account_id"))
+
+        if msg.method == ".lq.ActionPrototype":
+            if msg.data["name"] == "ActionNewRound":
+                msg.data["data"]["md5"] = msg.data["data"]["sha256"][:32]
+            send_msg = msg.data["data"]
+        elif msg.method == ".lq.FastTest.syncGame":
+            for action in msg.data["game_restore"]["actions"]:
+                if action["name"] == "ActionNewRound":
+                    action["data"]["md5"] = action["data"]["sha256"][:32]
+            send_msg = {"sync_game_actions": msg.data["game_restore"]["actions"]}
+        else:
+            send_msg = msg.data
+
+        post(aider.api, json=send_msg, verify=False)
+
+
+class Aider:
     port: int = 43410
+    aiders: dict[int, type["Aider"]] = {}
+
+    @classmethod
+    def one(cls, account_id):
+        if account_id in cls.aiders:
+            aider = cls.aiders[account_id]
+        else:
+            aider = cls.aiders[account_id] = cls()
+        return aider
 
     def __init__(self) -> None:
         with socket(AF_INET, SOCK_STREAM) as s:
@@ -24,23 +57,3 @@ class AiderPlugin(Plugin):
 
         self.api = f"https://127.0.0.1:{self.port}"
         self.__class__.port += 1
-
-    def handle(self, flow: http.HTTPFlow, msg: Msg) -> bool:
-        if msg.type is not MsgType.Req:
-            if msg.method == ".lq.ActionPrototype":
-                if msg.data["name"] == "ActionNewRound":
-                    msg.data["data"]["md5"] = msg.data["data"]["sha256"][:32]
-                send_msg = msg.data["data"]
-
-            elif msg.method == ".lq.FastTest.syncGame":
-                for action in msg.data["game_restore"]["actions"]:
-                    if action["name"] == "ActionNewRound":
-                        action["data"]["md5"] = action["data"]["sha256"][:32]
-                send_msg = {"sync_game_actions": msg.data["game_restore"]["actions"]}
-
-            else:
-                send_msg = msg.data
-
-            post(self.api, json=send_msg, verify=False)
-
-        return True
