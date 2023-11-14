@@ -53,6 +53,6 @@ def handle(flow: http.HTTPFlow, msg: Msg):
             logger.debug(__import__("traceback").format_exc())
 
     if msg.amended:
-        msg.amend(flow)
+        msg.apply(flow)
 
     log(flow, msg)

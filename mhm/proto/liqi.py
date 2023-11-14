@@ -59,7 +59,7 @@ class Msg:
         _, prototype = Proto.getPrototype(method, MsgType.Res)
         return cls(prototype, MsgType.Res, data, method, id)
 
-    def amend(self, flow: http.HTTPFlow):
+    def apply(self, flow: http.HTTPFlow):
         Proto.manipulate(flow, self)
 
     def respond(self, flow: http.HTTPFlow, res_data: dict = {}, notifys: list = []):
