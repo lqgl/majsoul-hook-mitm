@@ -45,11 +45,11 @@ def main():
         logger.info(f"[i]log level: {conf['mhm']['log_level']}")
         logger.info(f"[i]pure python protobuf: {conf['mhm']['pure_python_protobuf']}")
 
-        if "server" in conf:
+        if conf.get("server", None):
             logger.info(f"[i]version: {conf['server']['version']}")
             logger.info(f"[i]max_charid: {conf['server']['max_charid']}")
 
-        if "mitmdump" in conf:
+        if conf.get("mitmdump", None):
             loop.create_task(start_proxy())
             logger.info(f"[i]mitmdump launched @ {len(conf['mitmdump']['mode'])} mode")
 
