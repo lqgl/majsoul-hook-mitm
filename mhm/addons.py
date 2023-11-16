@@ -42,7 +42,7 @@ def log(msg: Msg):
 def handle(msg: Msg):
     for func in [
         *events.get(msg.key, []),
-        *events.get(any, []),
+        *events.get((any,), []),
     ]:
         try:
             func(msg)
