@@ -33,52 +33,89 @@ class Msg:
     """Game websocket message struct"""
 
     prototype: Message
+    flow: http.HTTPFlow
     type: MsgType
     data: dict
     method: str
 
     id: int = -1
     amended: bool = False
-    responded: bool = False
 
     def __post_init__(self):
         self.key = (self.type, self.method)
 
-    @classmethod
-    def notify(cls, data: dict, method: str):
-        prototype = Proto.getPrototype(method, MsgType.Notify)
-        return cls(prototype, MsgType.Notify, data, method)
+    @property
+    def compose(self):
+        head = self.type.value.to_bytes(length=1, byteorder="little")
+        proto_obj = ParseDict(js_dict=self.data, message=self.prototype())
+        msg_block = [{"id": 1, "type": "string"}, {"id": 2, "type": "string"}]
 
-    @classmethod
-    def req(cls, data: dict, method: str, id: int):
-        prototype, _ = Proto.getPrototype(method, MsgType.Req)
-        return cls(prototype, MsgType.Req, data, method, id)
+        if self.type == MsgType.Notify:
+            if "data" in self.data:
+                """Not yet supported"""
+                raise NotImplementedError
 
-    @classmethod
-    def res(cls, data: dict, method: str, id: int):
-        _, prototype = Proto.getPrototype(method, MsgType.Res)
-        return cls(prototype, MsgType.Res, data, method, id)
+            msg_block[0]["data"] = self.method.encode()
+            msg_block[1]["data"] = proto_obj.SerializeToString()
+            return head + toProtobuf(msg_block)
+        elif self.type == MsgType.Req:
+            msg_block[0]["data"] = self.method.encode()
+            msg_block[1]["data"] = proto_obj.SerializeToString()
+            return head + pack("<H", self.id) + toProtobuf(msg_block)
+        elif self.type == MsgType.Res:
+            msg_block[0]["data"] = b""
+            msg_block[1]["data"] = proto_obj.SerializeToString()
+            return head + pack("<H", self.id) + toProtobuf(msg_block)
 
-    def apply(self, flow: http.HTTPFlow):
-        Proto.manipulate(flow, self)
+    @property
+    def account(self) -> int | None:
+        try:
+            return getattr(self.flow, "account")
+        except:
+            return None
 
-    def respond(self, flow: http.HTTPFlow, res_data: dict = {}, notifys: list = []):
+    @account.setter
+    def account(self, account):
+        setattr(self.flow, "account", account)
+
+    @property
+    def tag(self):
+        if tag := self.account:
+            return tag
+        else:
+            return self.flow.id[:13]
+
+    @property
+    def message(self):
+        return self.flow.websocket.messages[-1]
+
+    def inject(self):
+        # inject.websocket flow to_client message is_text
+        ctx.master.commands.call(
+            "inject.websocket", self.flow, True, self.compose, False
+        )  # to_client is always true for security reasons
+
+    def apply(self):
+        """Apply amended msg into flow"""
+        self.message.content = self.compose
+
+    def drop(self):
+        """Drop this message"""
+        self.message.drop()
+
+    def notify(self, data: dict, method: str):
+        prototype = getPrototype(method, MsgType.Notify)
+        return Msg(prototype, self.flow, MsgType.Notify, data, method)
+
+    def request(self, data: dict = {}):
+        assert self.type is MsgType.Res
+        prototype, _ = getPrototype(self.method, MsgType.Req)
+        return Msg(prototype, self.flow, MsgType.Req, data, self.method, self.id)
+
+    def respond(self, data: dict = {}):
         assert self.type is MsgType.Req
-        assert not self.responded
-
-        res_msg = self.res(
-            res_data,
-            self.method,
-            self.id,
-        )
-
-        # drop latest request
-        flow.websocket.messages[-1].drop()
-
-        # inject messages
-        Proto.inject(flow, *notifys, res_msg)
-
-        self.responded = True
+        _, prototype = getPrototype(self.method, MsgType.Res)
+        return Msg(prototype, self.flow, MsgType.Res, data, self.method, self.id)
 
 
 class Proto:
@@ -94,7 +131,7 @@ class Proto:
         if msg_type == MsgType.Notify:
             msg_block = fromProtobuf(buf[1:])
             method_name = msg_block[0]["data"].decode()
-            prototype = self.getPrototype(method_name, msg_type)
+            prototype = getPrototype(method_name, msg_type)
             proto_obj = prototype.FromString(msg_block[1]["data"])
             dict_obj = MessageToDict(
                 proto_obj,
@@ -121,7 +158,7 @@ class Proto:
                 assert len(msg_block) == 2
                 assert msg_id not in self.res_type
                 method_name = msg_block[0]["data"].decode()
-                prototype, res_prototype = self.getPrototype(method_name, msg_type)
+                prototype, res_prototype = getPrototype(method_name, msg_type)
                 proto_obj = prototype.FromString(msg_block[1]["data"])
                 dict_obj = MessageToDict(
                     proto_obj,
@@ -155,58 +192,22 @@ class Proto:
                         )
                         action["data"] = action_dict_obj
         self.tot += 1
-        return Msg(prototype, msg_type, dict_obj, method_name, msg_id)
+        return Msg(prototype, flow, msg_type, dict_obj, method_name, msg_id)
 
-    @classmethod
-    def compose(cls, msg: Msg) -> bytes:
-        head = msg.type.value.to_bytes(length=1, byteorder="little")
-        proto_obj = ParseDict(js_dict=msg.data, message=msg.prototype())
-        msg_block = [{"id": 1, "type": "string"}, {"id": 2, "type": "string"}]
 
-        if msg.type == MsgType.Notify:
-            if "data" in msg.data:
-                """Not yet supported"""
-                raise NotImplementedError
+def getPrototype(method_name: str, msg_type: MsgType):
+    if msg_type == MsgType.Notify:
+        _, lq, message_name = method_name.split(".")
+        return getattr(pb, message_name)
 
-            msg_block[0]["data"] = msg.method.encode()
-            msg_block[1]["data"] = proto_obj.SerializeToString()
-            return head + toProtobuf(msg_block)
-        elif msg.type == MsgType.Req:
-            msg_block[0]["data"] = msg.method.encode()
-            msg_block[1]["data"] = proto_obj.SerializeToString()
-            return head + pack("<H", msg.id) + toProtobuf(msg_block)
-        elif msg.type == MsgType.Res:
-            msg_block[0]["data"] = b""
-            msg_block[1]["data"] = proto_obj.SerializeToString()
-            return head + pack("<H", msg.id) + toProtobuf(msg_block)
+    else:
+        _, lq, service, rpc = method_name.split(".")
+        method_desc = pb.DESCRIPTOR.services_by_name[service].methods_by_name[rpc]
 
-    @staticmethod
-    def getPrototype(method_name: str, msg_type: MsgType):
-        if msg_type == MsgType.Notify:
-            _, lq, message_name = method_name.split(".")
-            return getattr(pb, message_name)
-
-        else:
-            _, lq, service, rpc = method_name.split(".")
-            method_desc = pb.DESCRIPTOR.services_by_name[service].methods_by_name[rpc]
-
-            return (
-                getattr(pb, method_desc.input_type.name),
-                getattr(pb, method_desc.output_type.name),
-            )
-
-    @classmethod
-    def manipulate(cls, flow: http.HTTPFlow, msg: Msg) -> None:
-        last_message = flow.websocket.messages[-1]
-        last_message.content = cls.compose(msg=msg)
-
-    @classmethod
-    def inject(cls, flow: http.HTTPFlow, *msgs: dict) -> None:
-        for msg in msgs:
-            # inject.websocket flow to_client message is_text
-            ctx.master.commands.call(
-                "inject.websocket", flow, True, cls.compose(msg=msg), False
-            )
+        return (
+            getattr(pb, method_desc.input_type.name),
+            getattr(pb, method_desc.output_type.name),
+        )
 
 
 def fromProtobuf(buf) -> list[dict]:

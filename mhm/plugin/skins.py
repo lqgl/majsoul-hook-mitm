@@ -2,7 +2,6 @@ from json import load, dump
 from os.path import exists
 from os import mkdir
 from random import choice, randint
-from mitmproxy import http
 
 from mhm import ROOT, conf
 from mhm.events import listen
@@ -21,8 +20,8 @@ def _update(dict_a: dict, dict_b: dict, *exclude: str) -> None:
 @listen(MsgType.Res, ".lq.Lobby.login")
 @listen(MsgType.Res, ".lq.Lobby.emailLogin")
 @listen(MsgType.Res, ".lq.Lobby.oauth2Login")  # login
-def login(flow: http.HTTPFlow, msg: Msg):
-    skin = Skin.one(getattr(flow, "account_id"))
+def login(msg: Msg):
+    skin = Skin.one(msg.account)
 
     # 配置文件
     skin.profile = skin.info.path / f"{msg.data['account_id']}.json"
@@ -44,7 +43,7 @@ def login(flow: http.HTTPFlow, msg: Msg):
 @listen(MsgType.Res, ".lq.Lobby.joinRoom")
 @listen(MsgType.Res, ".lq.Lobby.fetchRoom")
 @listen(MsgType.Res, ".lq.Lobby.createRoom")  # login
-def joinRoom(flow: http.HTTPFlow, msg: Msg):
+def joinRoom(msg: Msg):
     # 在加入、获取、创建房间时修改己方头衔、立绘、角色
     if "room" not in msg.data:
         return True
@@ -55,39 +54,39 @@ def joinRoom(flow: http.HTTPFlow, msg: Msg):
 
 
 @listen(MsgType.Res, ".lq.Lobby.fetchBagInfo")
-def fetchBagInfo(flow: http.HTTPFlow, msg: Msg):
+def fetchBagInfo(msg: Msg):
     # 添加物品
-    if skin := Skin.get(getattr(flow, "account_id")):
+    if skin := Skin.get(msg.account):
         msg.data["bag"]["items"].extend(skin.info.items)
         msg.amended = True
 
 
 @listen(MsgType.Res, ".lq.Lobby.fetchTitleList")
-def fetchTitleList(flow: http.HTTPFlow, msg: Msg):
+def fetchTitleList(msg: Msg):
     # 添加头衔
-    if skin := Skin.get(getattr(flow, "account_id")):
+    if skin := Skin.get(msg.account):
         msg.data["title_list"] = skin.info.titles
         msg.amended = True
 
 
 @listen(MsgType.Res, ".lq.Lobby.fetchAllCommonViews")
-def fetchAllCommonViews(flow: http.HTTPFlow, msg: Msg):
+def fetchAllCommonViews(msg: Msg):
     # 装扮本地数据替换
-    if skin := Skin.get(getattr(flow, "account_id")):
+    if skin := Skin.get(msg.account):
         msg.data = skin.commonviews
         msg.amended = True
 
 
 @listen(MsgType.Res, ".lq.Lobby.fetchCharacterInfo")
-def fetchCharacterInfo(flow: http.HTTPFlow, msg: Msg):
+def fetchCharacterInfo(msg: Msg):
     # 全角色数据替换
-    if skin := Skin.get(getattr(flow, "account_id")):
+    if skin := Skin.get(msg.account):
         msg.data = skin.characters
         msg.amended = True
 
 
 @listen(MsgType.Res, ".lq.Lobby.fetchAccountInfo")
-def fetchAccountInfo(flow: http.HTTPFlow, msg: Msg):
+def fetchAccountInfo(msg: Msg):
     # 修改状态面板立绘、头衔
     if skin := Skin.get(msg.data["account"]["account_id"]):
         _update(msg.data["account"], skin.account, "loading_image")
@@ -95,9 +94,9 @@ def fetchAccountInfo(flow: http.HTTPFlow, msg: Msg):
 
 
 @listen(MsgType.Res, ".lq.FastTest.authGame")
-def authGame(flow: http.HTTPFlow, msg: Msg):
+def authGame(msg: Msg):
     # 进入对局时
-    if skin := Skin.get(getattr(flow, "account_id")):
+    if skin := Skin.get(msg.account):
         if skin.game_uuid in skin.games:
             msg.data["players"] = skin.games[skin.game_uuid]
         else:
@@ -124,32 +123,33 @@ def authGame(flow: http.HTTPFlow, msg: Msg):
 
 
 @listen(MsgType.Req, ".lq.FastTest.authGame")
-def enterGame(flow: http.HTTPFlow, msg: Msg):
+def enterGame(msg: Msg):
     # 记录当前对局 UUID
-    if skin := Skin.get(getattr(flow, "account_id")):
+    if skin := Skin.get(msg.account):
         skin.game_uuid = msg.data["game_uuid"]
 
 
 @listen(MsgType.Req, ".lq.Lobby.changeMainCharacter")
-def changeMainCharacter(flow: http.HTTPFlow, msg: Msg):
+def changeMainCharacter(msg: Msg):
     # 修改主角色时
-    if skin := Skin.get(getattr(flow, "account_id")):
+    if skin := Skin.get(msg.account):
         skin.characters["main_character_id"] = msg.data["character_id"]
         skin.account["avatar_id"] = skin.character["skin"]
         skin.save()
 
-        msg.respond(flow)
+        msg.drop()
+        msg.respond().inject()
 
 
 @listen(MsgType.Req, ".lq.Lobby.changeCharacterSkin")
-def changeCharacterSkin(flow: http.HTTPFlow, msg: Msg):
+def changeCharacterSkin(msg: Msg):
     # 修改角色皮肤时
-    if skin := Skin.get(getattr(flow, "account_id")):
+    if skin := Skin.get(msg.account):
         skin.get_character(msg.data["character_id"])["skin"] = msg.data["skin"]
         skin.account["avatar_id"] = skin.character["skin"]
         skin.save()
 
-        notify = Msg.notify(
+        msg.notify(
             data={
                 "update": {
                     "character": {
@@ -158,76 +158,83 @@ def changeCharacterSkin(flow: http.HTTPFlow, msg: Msg):
                 }
             },
             method=".lq.NotifyAccountUpdate",
-        )
+        ).inject()
 
-        msg.respond(flow, notifys=[notify])
+        msg.drop()
+        msg.respond().inject()
 
 
 @listen(MsgType.Req, ".lq.Lobby.updateCharacterSort")
-def updateCharacterSort(flow: http.HTTPFlow, msg: Msg):
+def updateCharacterSort(msg: Msg):
     # 修改星标角色时
-    if skin := Skin.get(getattr(flow, "account_id")):
+    if skin := Skin.get(msg.account):
         skin.characters["character_sort"] = msg.data["sort"]
         skin.save()
 
-        msg.respond(flow)
+        msg.drop()
+        msg.respond().inject()
 
 
 @listen(MsgType.Req, ".lq.Lobby.useTitle")
-def useTitle(flow: http.HTTPFlow, msg: Msg):
+def useTitle(msg: Msg):
     # 选择头衔时
-    if skin := Skin.get(getattr(flow, "account_id")):
+    if skin := Skin.get(msg.account):
         skin.account["title"] = msg.data["title"]
         skin.save()
 
-        msg.respond(flow)
+        msg.drop()
+        msg.respond().inject()
 
 
 @listen(MsgType.Req, ".lq.Lobby.modifyNickname")
-def modifyNickname(flow: http.HTTPFlow, msg: Msg):
+def modifyNickname(msg: Msg):
     # 修改昵称时
-    if skin := Skin.get(getattr(flow, "account_id")):
+    if skin := Skin.get(msg.account):
         skin.account["nickname"] = msg.data["nickname"]
         skin.save()
 
-        msg.respond(flow)
+        msg.drop()
+        msg.respond().inject()
 
 
 @listen(MsgType.Req, ".lq.Lobby.setLoadingImage")
-def setLoadingImage(flow: http.HTTPFlow, msg: Msg):
+def setLoadingImage(msg: Msg):
     # 选择加载图时
-    if skin := Skin.get(getattr(flow, "account_id")):
+    if skin := Skin.get(msg.account):
         skin.account["loading_image"] = msg.data["images"]
         skin.save()
 
-        msg.respond(flow)
+        msg.drop()
+        msg.respond().inject()
 
 
 @listen(MsgType.Req, ".lq.Lobby.useCommonView")
-def useCommonView(flow: http.HTTPFlow, msg: Msg):
+def useCommonView(msg: Msg):
     # 选择装扮时
-    if skin := Skin.get(getattr(flow, "account_id")):
+    if skin := Skin.get(msg.account):
         skin.commonviews["use"] = msg.data["index"]
         skin.save()
 
-        msg.respond(flow)
+        msg.drop()
+        msg.respond().inject()
 
 
 @listen(MsgType.Req, ".lq.Lobby.saveCommonViews")
-def saveCommonViews(flow: http.HTTPFlow, msg: Msg):
+def saveCommonViews(msg: Msg):
     # 修改装扮时
-    if skin := Skin.get(getattr(flow, "account_id")):
+    if skin := Skin.get(msg.account):
         skin.commonviews["views"][msg.data["save_index"]]["values"] = msg.data["views"]
         skin.save()
 
-        msg.respond(flow)
+        msg.drop()
+        msg.respond().inject()
 
 
 """Notify"""
 
 
 @listen(MsgType.Notify, ".lq.NotifyRoomPlayerUpdate")
-def NotifyRoomPlayerUpdate(flow: http.HTTPFlow, msg: Msg):
+def NotifyRoomPlayerUpdate(msg: Msg):
     # 房间中添加、减少玩家时修改立绘、头衔
     for player in msg.data["player_list"]:
         if skin := Skin.get(player["account_id"]):
@@ -236,9 +243,9 @@ def NotifyRoomPlayerUpdate(flow: http.HTTPFlow, msg: Msg):
 
 
 @listen(MsgType.Notify, ".lq.NotifyGameFinishRewardV2")
-def NotifyGameFinishRewardV2(flow: http.HTTPFlow, msg: Msg):
+def NotifyGameFinishRewardV2(msg: Msg):
     # 终局结算时，不播放羁绊动画
-    if skin := Skin.get(getattr(flow, "account_id")):
+    if skin := Skin.get(msg.account):
         msg.data["main_character"] = {"exp": 1, "add": 0, "level": 5}
         msg.amended = True
 
@@ -287,12 +294,12 @@ class Skin:
     info: SkinInfo = SkinInfo()
 
     @classmethod
-    def one(cls, account_id):
-        if account_id in cls.skins:
-            skin = cls.skins[account_id]
+    def one(cls, account):
+        if account in cls.skins:
+            one = cls.skins[account]
         else:
-            skin = cls.skins[account_id] = cls()
-        return skin
+            one = cls.skins[account] = cls()
+        return one
 
     @classmethod
     def get(cls, account_id):

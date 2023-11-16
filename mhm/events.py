@@ -1,5 +1,3 @@
-from mitmproxy import http
-
 from . import conf
 from .proto.liqi import Msg, MsgType
 
@@ -23,8 +21,8 @@ def listen(*key):
 @listen(MsgType.Res, ".lq.Lobby.emailLogin")
 @listen(MsgType.Res, ".lq.Lobby.oauth2Login")  # login
 @listen(MsgType.Req, ".lq.FastTest.authGame")  # new match
-def login(flow: http.HTTPFlow, msg: Msg):
-    setattr(flow, "account_id", msg.data["account_id"])
+def login(msg: Msg):
+    msg.account = msg.data["account_id"]
 
 
 # import plugins
@@ -33,4 +31,4 @@ if conf["plugin"]["enable_aider"]:
 if conf["plugin"]["enable_chest"]:
     import mhm.plugin.chest
 if conf["plugin"]["enable_skins"]:
-    import mhm.plugin.skin
+    import mhm.plugin.skins

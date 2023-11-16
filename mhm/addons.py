@@ -1,9 +1,9 @@
 from mitmproxy import http
 
 
-from . import logger, conf
+from . import logger
 from .events import events
-from .proto.liqi import Proto, Msg, MsgType
+from .proto.liqi import Proto, Msg
 
 
 class WebSocketAddon:
@@ -28,31 +28,29 @@ class WebSocketAddon:
 
             return
 
-        handle(flow, msg)
+        handle(msg)
 
 
 addons = [WebSocketAddon()]
 
 
-def log(flow: http.HTTPFlow, msg: Msg):
-    tag = str(flow.account_id) if hasattr(flow, "account_id") else flow.id[:13]
-
-    logger.info(" ".join(["[i][gold1]&", tag, msg.type.name, msg.method, str(msg.id)]))
+def log(msg: Msg):
+    logger.info(f"[i][gold1]& {msg.tag} {msg.type.name} {msg.method} {msg.id}")
     logger.debug(msg)
 
 
-def handle(flow: http.HTTPFlow, msg: Msg):
+def handle(msg: Msg):
     for func in [
         *events.get(msg.key, []),
         *events.get(any, []),
     ]:
         try:
-            func(flow, msg)
+            func(msg)
         except:
-            logger.warning(" ".join(["[i][red]Error", flow.id[:13]]))
+            logger.warning(" ".join(["[i][red]Error", msg.tag]))
             logger.debug(__import__("traceback").format_exc())
 
     if msg.amended:
-        msg.apply(flow)
+        msg.apply()
 
-    log(flow, msg)
+    log(msg)
