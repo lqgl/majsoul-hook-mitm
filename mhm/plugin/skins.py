@@ -3,7 +3,7 @@ from os.path import exists
 from os import mkdir
 from random import choice, randint
 
-from mhm import ROOT, conf
+from mhm import root, conf
 from mhm.events import listen
 from mhm.proto.liqi import Msg, MsgType
 
@@ -282,7 +282,7 @@ class SkinInfo:
             for i in set(range(305001, 309000)).difference(excluded_items)
         ]
 
-        self.path = ROOT / "account"
+        self.path = root / "account"
 
         if not exists(self.path):
             mkdir(self.path)

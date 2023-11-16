@@ -7,10 +7,37 @@ from json import load, dump
 from logging import getLogger
 from pathlib import Path
 
-ROOT = Path(".")
-CONF_SET = ROOT / "conf.json"
 
-DEFAULT_SET = {
+class _BaseDict(TypedDict):
+    log_level: str
+    pure_python_protobuf: bool
+
+
+class _ServerDict(TypedDict):
+    version: str
+    max_charid: int
+
+
+class _PluginDict(TypedDict):
+    enable_skins: bool
+    enable_aider: bool
+    enable_chest: bool
+    random_star_char: bool
+
+
+class ConfigDict(TypedDict):
+    mhm: _BaseDict
+    server: _ServerDict
+    plugin: _PluginDict
+
+    dump: Optional[dict]
+    mitmdump: Optional[dict]
+    proxinject: Optional[dict]
+
+
+root = Path(".")
+
+conf: ConfigDict = {
     "mhm": {
         "log_level": "info",
         "pure_python_protobuf": False,
@@ -40,34 +67,7 @@ DEFAULT_SET = {
 }
 
 
-class _BaseDict(TypedDict):
-    log_level: str
-    pure_python_protobuf: bool
-
-
-class _ServerDict(TypedDict):
-    version: str
-    max_charid: int
-
-
-class _PluginDict(TypedDict):
-    enable_skins: bool
-    enable_aider: bool
-    enable_chest: bool
-    random_star_char: bool
-
-
-class ConfigDict(TypedDict):
-    mhm: _BaseDict
-    server: _ServerDict
-    plugin: _PluginDict
-
-    dump: Optional[dict]
-    mitmdump: Optional[dict]
-    proxinject: Optional[dict]
-
-
-def _fetch_maxid(conf: ConfigDict):
+def fetch_maxid(conf: ConfigDict):
     """Fetch the latest character id"""
     import requests
     import random
@@ -98,20 +98,25 @@ def _fetch_maxid(conf: ConfigDict):
     }
 
 
-if exists(CONF_SET):
-    conf: ConfigDict = load(open(CONF_SET, "r"))
-else:
-    conf: ConfigDict = DEFAULT_SET
+def init():
+    global conf
 
-# consol
+    path = root / "mhmp.json"
+
+    if exists(path):
+        conf.update(load(open(path, "r")))
+
+    with console.status("[magenta]Fetch the latest server version") as status:
+        fetch_maxid(conf)
+    if conf["mhm"]["pure_python_protobuf"]:
+        environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
+
+    dump(conf, open(path, "w"), indent=2)
+
+
+# console
 console = Console()
 
-# init
-with console.status("[magenta]Fetch the latest server version") as status:
-    _fetch_maxid(conf)
-    dump(conf, open(CONF_SET, "w"), indent=2)
-if conf["mhm"]["pure_python_protobuf"]:
-    environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
 # logger
 logger = getLogger(__name__)

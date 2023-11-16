@@ -1,10 +1,6 @@
 import asyncio
 
-from mitmproxy.tools.dump import DumpMaster
-from mitmproxy.options import Options
-
-from . import ROOT, logger, conf
-from .addons import addons
+from . import root, logger, conf, init
 
 
 def _cmd(dict):
@@ -12,6 +8,10 @@ def _cmd(dict):
 
 
 async def start_proxy():
+    from mitmproxy.tools.dump import DumpMaster
+    from mitmproxy.options import Options
+    from .addons import addons
+
     master = DumpMaster(
         Options(**conf["mitmdump"]),
         **conf["dump"],
@@ -24,7 +24,7 @@ async def start_proxy():
 
 async def start_inject():
     cmd = [
-        ROOT / "common/proxinject/proxinjector-cli",
+        root / "common/proxinject/proxinjector-cli",
         *_cmd(conf["proxinject"]),
     ]
 
@@ -40,6 +40,8 @@ async def start_inject():
 
 def main():
     try:
+        init()
+
         loop = asyncio.get_event_loop()
 
         logger.info(f"[i]log level: {conf['mhm']['log_level']}")

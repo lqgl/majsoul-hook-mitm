@@ -33,8 +33,8 @@ mhm 使用 Proxinject 在雀魂客户端中注入 Socks5 代理
 同步仓库
 
 ```bash
-git clone https://github.com/anosora233/majsoul-hook-mitm.git
-cd majsoul-hook-mitm
+git clone https://github.com/anosora233/majsoul-hook-mitm.git && cd majsoul-hook-mitm
+
 ```
 
 配置国内镜像源（可选）
@@ -58,7 +58,7 @@ python -m mhm
 
 ## 配置文件
 
-首次启动 mhm 会自动生成配置文件 conf.json
+首次启动 mhm 会自动生成配置文件 mhmp.json
 
 可以编辑此文件以根据需求自定义设置，以下表格解释了 plugin 可用的配置选项：
 
