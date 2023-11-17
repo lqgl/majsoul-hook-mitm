@@ -7,14 +7,14 @@ from urllib3.exceptions import InsecureRequestWarning
 from socket import socket, AF_INET, SOCK_STREAM
 
 from mhm import root
-from mhm.events import listen
+from mhm.events import manager
 from mhm.proto.liqi import Msg, MsgType
 
 
 disable_warnings(InsecureRequestWarning)
 
 
-@listen(any)
+@manager.register(any)
 def handle(msg: Msg):
     if not msg.account or msg.type == MsgType.Req:
         return

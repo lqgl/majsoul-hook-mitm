@@ -2,8 +2,8 @@ from mitmproxy import http
 
 
 from . import logger
-from .events import events
-from .proto.liqi import Proto, Msg
+from .events import manager
+from .proto.liqi import Proto
 
 
 class WebSocketAddon:
@@ -28,29 +28,7 @@ class WebSocketAddon:
 
             return
 
-        handle(msg)
+        manager.trigger(msg)
 
 
 addons = [WebSocketAddon()]
-
-
-def log(msg: Msg):
-    logger.info(f"[i][gold1]& {msg.tag} {msg.type.name} {msg.method} {msg.id}")
-    logger.debug(msg)
-
-
-def handle(msg: Msg):
-    for func in [
-        *events.get(msg.key, []),
-        *events.get((any,), []),
-    ]:
-        try:
-            func(msg)
-        except:
-            logger.warning(" ".join(["[i][red]Error", msg.tag]))
-            logger.debug(__import__("traceback").format_exc())
-
-    if msg.amended:
-        msg.apply()
-
-    log(msg)

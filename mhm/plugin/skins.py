@@ -4,7 +4,7 @@ from os import mkdir
 from random import choice, randint
 
 from mhm import root, conf
-from mhm.events import listen
+from mhm.events import manager
 from mhm.proto.liqi import Msg, MsgType
 
 
@@ -17,9 +17,9 @@ def _update(dict_a: dict, dict_b: dict, *exclude: str) -> None:
 """Response"""
 
 
-@listen(MsgType.Res, ".lq.Lobby.login")
-@listen(MsgType.Res, ".lq.Lobby.emailLogin")
-@listen(MsgType.Res, ".lq.Lobby.oauth2Login")  # login
+@manager.register(MsgType.Res, ".lq.Lobby.login")
+@manager.register(MsgType.Res, ".lq.Lobby.emailLogin")
+@manager.register(MsgType.Res, ".lq.Lobby.oauth2Login")  # login
 def login(msg: Msg):
     skin = Skin.one(msg.account)
 
@@ -40,9 +40,9 @@ def login(msg: Msg):
     msg.amended = True
 
 
-@listen(MsgType.Res, ".lq.Lobby.joinRoom")
-@listen(MsgType.Res, ".lq.Lobby.fetchRoom")
-@listen(MsgType.Res, ".lq.Lobby.createRoom")  # login
+@manager.register(MsgType.Res, ".lq.Lobby.joinRoom")
+@manager.register(MsgType.Res, ".lq.Lobby.fetchRoom")
+@manager.register(MsgType.Res, ".lq.Lobby.createRoom")  # login
 def joinRoom(msg: Msg):
     # 在加入、获取、创建房间时修改己方头衔、立绘、角色
     if "room" not in msg.data:
@@ -53,7 +53,7 @@ def joinRoom(msg: Msg):
             msg.amended = True
 
 
-@listen(MsgType.Res, ".lq.Lobby.fetchBagInfo")
+@manager.register(MsgType.Res, ".lq.Lobby.fetchBagInfo")
 def fetchBagInfo(msg: Msg):
     # 添加物品
     if skin := Skin.get(msg.account):
@@ -61,7 +61,7 @@ def fetchBagInfo(msg: Msg):
         msg.amended = True
 
 
-@listen(MsgType.Res, ".lq.Lobby.fetchTitleList")
+@manager.register(MsgType.Res, ".lq.Lobby.fetchTitleList")
 def fetchTitleList(msg: Msg):
     # 添加头衔
     if skin := Skin.get(msg.account):
@@ -69,7 +69,7 @@ def fetchTitleList(msg: Msg):
         msg.amended = True
 
 
-@listen(MsgType.Res, ".lq.Lobby.fetchAllCommonViews")
+@manager.register(MsgType.Res, ".lq.Lobby.fetchAllCommonViews")
 def fetchAllCommonViews(msg: Msg):
     # 装扮本地数据替换
     if skin := Skin.get(msg.account):
@@ -77,7 +77,7 @@ def fetchAllCommonViews(msg: Msg):
         msg.amended = True
 
 
-@listen(MsgType.Res, ".lq.Lobby.fetchCharacterInfo")
+@manager.register(MsgType.Res, ".lq.Lobby.fetchCharacterInfo")
 def fetchCharacterInfo(msg: Msg):
     # 全角色数据替换
     if skin := Skin.get(msg.account):
@@ -85,7 +85,7 @@ def fetchCharacterInfo(msg: Msg):
         msg.amended = True
 
 
-@listen(MsgType.Res, ".lq.Lobby.fetchAccountInfo")
+@manager.register(MsgType.Res, ".lq.Lobby.fetchAccountInfo")
 def fetchAccountInfo(msg: Msg):
     # 修改状态面板立绘、头衔
     if skin := Skin.get(msg.data["account"]["account_id"]):
@@ -93,7 +93,7 @@ def fetchAccountInfo(msg: Msg):
         msg.amended = True
 
 
-@listen(MsgType.Res, ".lq.FastTest.authGame")
+@manager.register(MsgType.Res, ".lq.FastTest.authGame")
 def authGame(msg: Msg):
     # 进入对局时
     if skin := Skin.get(msg.account):
@@ -122,14 +122,14 @@ def authGame(msg: Msg):
 """Request"""
 
 
-@listen(MsgType.Req, ".lq.FastTest.authGame")
+@manager.register(MsgType.Req, ".lq.FastTest.authGame")
 def enterGame(msg: Msg):
     # 记录当前对局 UUID
     if skin := Skin.get(msg.account):
         skin.game_uuid = msg.data["game_uuid"]
 
 
-@listen(MsgType.Req, ".lq.Lobby.changeMainCharacter")
+@manager.register(MsgType.Req, ".lq.Lobby.changeMainCharacter")
 def changeMainCharacter(msg: Msg):
     # 修改主角色时
     if skin := Skin.get(msg.account):
@@ -141,7 +141,7 @@ def changeMainCharacter(msg: Msg):
         msg.respond().inject()
 
 
-@listen(MsgType.Req, ".lq.Lobby.changeCharacterSkin")
+@manager.register(MsgType.Req, ".lq.Lobby.changeCharacterSkin")
 def changeCharacterSkin(msg: Msg):
     # 修改角色皮肤时
     if skin := Skin.get(msg.account):
@@ -164,7 +164,7 @@ def changeCharacterSkin(msg: Msg):
         msg.respond().inject()
 
 
-@listen(MsgType.Req, ".lq.Lobby.updateCharacterSort")
+@manager.register(MsgType.Req, ".lq.Lobby.updateCharacterSort")
 def updateCharacterSort(msg: Msg):
     # 修改星标角色时
     if skin := Skin.get(msg.account):
@@ -175,7 +175,7 @@ def updateCharacterSort(msg: Msg):
         msg.respond().inject()
 
 
-@listen(MsgType.Req, ".lq.Lobby.useTitle")
+@manager.register(MsgType.Req, ".lq.Lobby.useTitle")
 def useTitle(msg: Msg):
     # 选择头衔时
     if skin := Skin.get(msg.account):
@@ -186,7 +186,7 @@ def useTitle(msg: Msg):
         msg.respond().inject()
 
 
-@listen(MsgType.Req, ".lq.Lobby.modifyNickname")
+@manager.register(MsgType.Req, ".lq.Lobby.modifyNickname")
 def modifyNickname(msg: Msg):
     # 修改昵称时
     if skin := Skin.get(msg.account):
@@ -197,7 +197,7 @@ def modifyNickname(msg: Msg):
         msg.respond().inject()
 
 
-@listen(MsgType.Req, ".lq.Lobby.setLoadingImage")
+@manager.register(MsgType.Req, ".lq.Lobby.setLoadingImage")
 def setLoadingImage(msg: Msg):
     # 选择加载图时
     if skin := Skin.get(msg.account):
@@ -208,7 +208,7 @@ def setLoadingImage(msg: Msg):
         msg.respond().inject()
 
 
-@listen(MsgType.Req, ".lq.Lobby.useCommonView")
+@manager.register(MsgType.Req, ".lq.Lobby.useCommonView")
 def useCommonView(msg: Msg):
     # 选择装扮时
     if skin := Skin.get(msg.account):
@@ -219,7 +219,7 @@ def useCommonView(msg: Msg):
         msg.respond().inject()
 
 
-@listen(MsgType.Req, ".lq.Lobby.saveCommonViews")
+@manager.register(MsgType.Req, ".lq.Lobby.saveCommonViews")
 def saveCommonViews(msg: Msg):
     # 修改装扮时
     if skin := Skin.get(msg.account):
@@ -233,7 +233,7 @@ def saveCommonViews(msg: Msg):
 """Notify"""
 
 
-@listen(MsgType.Notify, ".lq.NotifyRoomPlayerUpdate")
+@manager.register(MsgType.Notify, ".lq.NotifyRoomPlayerUpdate")
 def NotifyRoomPlayerUpdate(msg: Msg):
     # 房间中添加、减少玩家时修改立绘、头衔
     for player in msg.data["player_list"]:
@@ -242,7 +242,7 @@ def NotifyRoomPlayerUpdate(msg: Msg):
             msg.amended = True
 
 
-@listen(MsgType.Notify, ".lq.NotifyGameFinishRewardV2")
+@manager.register(MsgType.Notify, ".lq.NotifyGameFinishRewardV2")
 def NotifyGameFinishRewardV2(msg: Msg):
     # 终局结算时，不播放羁绊动画
     if skin := Skin.get(msg.account):

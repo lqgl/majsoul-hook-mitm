@@ -1,7 +1,7 @@
 from random import random, choice
 
 from mhm import conf
-from mhm.events import listen
+from mhm.events import manager
 from mhm.proto.liqi import Msg, MsgType
 
 DEFAULT_CHEST = [
@@ -56,17 +56,17 @@ def chest(count: int, chest_id: int):
 
 
 # login
-@listen(MsgType.Res, ".lq.Lobby.login")
-@listen(MsgType.Res, ".lq.Lobby.emailLogin")
-@listen(MsgType.Res, ".lq.Lobby.oauth2Login")
+@manager.register(MsgType.Res, ".lq.Lobby.login")
+@manager.register(MsgType.Res, ".lq.Lobby.emailLogin")
+@manager.register(MsgType.Res, ".lq.Lobby.oauth2Login")
 # lobby refresh
-@listen(MsgType.Res, ".lq.Lobby.fetchAccountInfo")
+@manager.register(MsgType.Res, ".lq.Lobby.fetchAccountInfo")
 def login(msg: Msg):
     msg.data["account"]["platform_diamond"] = [{"id": 100001, "count": 66666}]
     msg.amended = True
 
 
-@listen(MsgType.Req, ".lq.Lobby.openChest")
+@manager.register(MsgType.Req, ".lq.Lobby.openChest")
 def openChest(msg: Msg):
     data = chest(msg.data["count"], msg.data["chest_id"])
 
