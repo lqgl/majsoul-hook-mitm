@@ -51,9 +51,9 @@ def login(msg: Msg):
 
 
 # import plugins
-if conf["plugin"]["enable_aider"]:
+if conf.plugin.enable_aider:
     import mhm.plugin.aider
-if conf["plugin"]["enable_chest"]:
+if conf.plugin.enable_chest:
     import mhm.plugin.chest
-if conf["plugin"]["enable_skins"]:
+if conf.plugin.enable_skins:
     import mhm.plugin.skins

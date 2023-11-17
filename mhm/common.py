@@ -13,8 +13,8 @@ async def start_proxy():
     from .addons import addons
 
     master = DumpMaster(
-        Options(**conf["mitmdump"]),
-        **conf["dump"],
+        Options(**conf.mitmdump),
+        **conf.dump,
     )
 
     master.addons.add(*addons)
@@ -25,7 +25,7 @@ async def start_proxy():
 async def start_inject():
     cmd = [
         root / "common/proxinject/proxinjector-cli",
-        *_cmd(conf["proxinject"]),
+        *_cmd(conf.proxinject),
     ]
 
     process = await asyncio.subprocess.create_subprocess_exec(
@@ -44,20 +44,20 @@ def main():
 
         loop = asyncio.get_event_loop()
 
-        logger.info(f"[i]log level: {conf['mhm']['log_level']}")
-        logger.info(f"[i]pure python protobuf: {conf['mhm']['pure_python_protobuf']}")
+        logger.info(f"[i]log level: {conf.mhm.log_level}")
+        logger.info(f"[i]pure python protobuf: {conf.mhm.pure_python_protobuf}")
 
-        if conf.get("server", None):
-            logger.info(f"[i]version: {conf['server']['version']}")
-            logger.info(f"[i]max_charid: {conf['server']['max_charid']}")
+        if conf.server:
+            logger.info(f"[i]version: {conf.server.version}")
+            logger.info(f"[i]max charid: {conf.server.max_charid}")
 
-        if conf.get("mitmdump", None):
+        if conf.mitmdump:
             loop.create_task(start_proxy())
-            logger.info(f"[i]mitmdump launched @ {len(conf['mitmdump']['mode'])} mode")
+            logger.info(f"[i]mitmdump launched @ {len(conf.mitmdump.get('mode'))} mode")
 
-        if conf.get("proxinject", None):
+        if conf.proxinject:
             loop.create_task(start_inject())
-            logger.info(f"[i]proxinject launched @ {conf['proxinject']['set-proxy']}")
+            logger.info(f"[i]proxinject launched @ {conf.proxinject.get('set-proxy')}")
 
         loop.run_forever()
     except KeyboardInterrupt:

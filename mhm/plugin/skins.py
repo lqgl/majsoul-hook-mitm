@@ -105,7 +105,7 @@ def authGame(msg: Msg):
                 if other := Skin.get(player["account_id"]):
                     _update(player, other.player)
 
-                    if conf["plugin"]["random_star_char"]:
+                    if conf.plugin.random_star_char:
                         random_char = other.random_star_character
                         player["character"] = random_char
                         player["avatar_id"] = random_char["skin"]
@@ -332,7 +332,7 @@ class Skin:
 
     @property
     def random_character(self) -> dict[str, any]:
-        return self.get_character(randint(200001, conf["server"]["max_charid"] - 1))
+        return self.get_character(randint(200001, conf.server.max_charid - 1))
 
     @property
     def avatar_frame(self) -> int:
@@ -394,7 +394,7 @@ class Skin:
             self.update()
 
     def get_character(self, charid: int) -> dict:
-        assert 200000 < charid < conf["server"]["max_charid"]
+        assert 200000 < charid < conf.server.max_charid
         return self.characters["characters"][charid - 200001]
 
     def init(self) -> None:
@@ -420,7 +420,7 @@ class Skin:
         # 200002 二姐
         # ......
         # 200075
-        for charid in range(200001, conf["server"]["max_charid"]):
+        for charid in range(200001, conf.server.max_charid):
             skin = 400000 + (charid - 200000) * 100 + 1
             character = {
                 "charid": charid,
@@ -445,12 +445,12 @@ class Skin:
 
     def update(self) -> None:
         # characters
-        if len(self.characters["characters"]) == conf["server"]["max_charid"] - 200001:
+        if len(self.characters["characters"]) == conf.server.max_charid - 200001:
             return
 
         for charid in range(
             len(self.characters["characters"]) + 200001,
-            conf["server"]["max_charid"],
+            conf.server.max_charid,
         ):
             skin = 400000 + (charid - 200000) * 100 + 1
             character = {
