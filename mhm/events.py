@@ -4,7 +4,7 @@ from .proto.liqi import Msg, MsgType
 
 def log(msg: Msg):
     logger.info(f"[i][gold1]& {msg.tag} {msg.type.name} {msg.method} {msg.id}")
-    logger.debug(msg)
+    logger.debug(f"[cyan3]# {msg.amended} {msg.data}")
 
 
 class EventManager:

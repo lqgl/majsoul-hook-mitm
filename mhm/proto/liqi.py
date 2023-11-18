@@ -4,7 +4,8 @@ from struct import unpack, pack
 from enum import Enum
 from google.protobuf.json_format import MessageToDict, ParseDict
 from google.protobuf.message import Message
-from mitmproxy import http, ctx
+from mitmproxy.http import HTTPFlow
+from mitmproxy import ctx
 from dataclasses import dataclass
 
 from . import liqi_pb2 as pb
@@ -32,8 +33,8 @@ class MsgType(Enum):
 class Msg:
     """Game websocket message struct"""
 
-    prototype: Message
-    flow: http.HTTPFlow
+    proto: Message
+    flow: HTTPFlow
     type: MsgType
     data: dict
     method: str
@@ -47,7 +48,7 @@ class Msg:
     @property
     def compose(self):
         head = self.type.value.to_bytes(length=1, byteorder="little")
-        proto_obj = ParseDict(js_dict=self.data, message=self.prototype())
+        proto_obj = ParseDict(js_dict=self.data, message=self.proto)
         msg_block = [{"id": 1, "type": "string"}, {"id": 2, "type": "string"}]
 
         if self.type == MsgType.Notify:
@@ -105,17 +106,17 @@ class Msg:
 
     def notify(self, data: dict, method: str):
         prototype = getPrototype(method, MsgType.Notify)
-        return Msg(prototype, self.flow, MsgType.Notify, data, method)
+        return Msg(prototype(), self.flow, MsgType.Notify, data, method)
 
     def request(self, data: dict = {}):
         assert self.type is MsgType.Res
         prototype, _ = getPrototype(self.method, MsgType.Req)
-        return Msg(prototype, self.flow, MsgType.Req, data, self.method, self.id)
+        return Msg(prototype(), self.flow, MsgType.Req, data, self.method, self.id)
 
     def respond(self, data: dict = {}):
         assert self.type is MsgType.Req
         _, prototype = getPrototype(self.method, MsgType.Res)
-        return Msg(prototype, self.flow, MsgType.Res, data, self.method, self.id)
+        return Msg(prototype(), self.flow, MsgType.Res, data, self.method, self.id)
 
 
 class Proto:
@@ -123,7 +124,7 @@ class Proto:
         self.tot = 0
         self.res_type = dict()
 
-    def parse(self, flow: http.HTTPFlow) -> Msg:
+    def parse(self, flow: HTTPFlow) -> Msg:
         flow_msg = flow.websocket.messages[-1]
         buf = flow_msg.content
         msg_type = MsgType(buf[0])
@@ -192,7 +193,7 @@ class Proto:
                         )
                         action["data"] = action_dict_obj
         self.tot += 1
-        return Msg(prototype, flow, msg_type, dict_obj, method_name, msg_id)
+        return Msg(proto_obj, flow, msg_type, dict_obj, method_name, msg_id)
 
 
 def getPrototype(method_name: str, msg_type: MsgType):
