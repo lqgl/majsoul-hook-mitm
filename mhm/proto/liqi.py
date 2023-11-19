@@ -72,7 +72,7 @@ class Msg:
     def account(self) -> int | None:
         try:
             return getattr(self.flow, "account")
-        except:
+        except AttributeError:
             return None
 
     @account.setter
@@ -82,7 +82,7 @@ class Msg:
     @property
     def tag(self):
         if tag := self.account:
-            return tag
+            return str(tag)
         else:
             return self.flow.id[:13]
 
@@ -196,7 +196,9 @@ class Proto:
         return Msg(proto_obj, flow, msg_type, dict_obj, method_name, msg_id)
 
 
-def getPrototype(method_name: str, msg_type: MsgType):
+def getPrototype(
+    method_name: str, msg_type: MsgType
+) -> type[Message] | tuple[type[Message], type[Message]]:
     if msg_type == MsgType.Notify:
         _, lq, message_name = method_name.split(".")
         return getattr(pb, message_name)

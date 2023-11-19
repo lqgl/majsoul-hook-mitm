@@ -1,17 +1,31 @@
 from json import load, dump
 from os.path import exists
 from os import mkdir
-from random import choice, randint
+from random import choice
 
 from mhm import root, conf
-from mhm.events import manager
+from mhm.events import manager, pool
 from mhm.proto.liqi import Msg, MsgType
 
 
-def _update(dict_a: dict, dict_b: dict, *exclude: str) -> None:
-    for key, value in dict_b.items():
-        if key not in exclude and key in dict_a:
-            dict_a[key] = value
+def _character(charid: int) -> dict:
+    return {
+        "charid": charid,
+        "level": 5,
+        "exp": 1,
+        "skin": charid % 1000 * 100 + 400001,
+        "extra_emoji": [],
+        "is_upgraded": True,
+        "rewarded_level": [],
+        "views": [],
+    }
+
+
+def _characters_and_skins(charid_x: int, charid_y: int):
+    characters = [_character(i) for i in range(charid_x, charid_y)]
+    skins = [idx for c in characters for idx in range(c["skin"], c["skin"] + 9)]
+
+    return characters, skins
 
 
 """Response"""
@@ -21,22 +35,8 @@ def _update(dict_a: dict, dict_b: dict, *exclude: str) -> None:
 @manager.register(MsgType.Res, ".lq.Lobby.emailLogin")
 @manager.register(MsgType.Res, ".lq.Lobby.oauth2Login")  # login
 def login(msg: Msg):
-    skin = Skin.one(msg.account)
-
-    # 配置文件
-    skin.profile = skin.info.path / f"{msg.data['account_id']}.json"
-    # 保存原角色、皮肤、昵称
-    avatar_id = msg.data["account"]["avatar_id"]
-    character_id = (int)((avatar_id - 400000) / 100 + 200000)
-    skin.original_char = (character_id, avatar_id)
-
-    if exists(skin.profile):
-        skin.read()
-        _update(msg.data["account"], skin.account)
-    else:
-        skin.init()
-        _update(skin.account, msg.data["account"])
-
+    skin = pool.one(Skin, msg.account, msg)
+    skin.update_player(msg.data.get("account"))
     msg.amended = True
 
 
@@ -48,15 +48,15 @@ def joinRoom(msg: Msg):
     if "room" not in msg.data:
         return True
     for person in msg.data["room"]["persons"]:
-        if skin := Skin.get(person["account_id"]):
-            _update(person, skin.account)
+        if skin := pool.get(Skin, person["account_id"]):
+            skin.update_player(person)
             msg.amended = True
 
 
 @manager.register(MsgType.Res, ".lq.Lobby.fetchBagInfo")
 def fetchBagInfo(msg: Msg):
     # 添加物品
-    if skin := Skin.get(msg.account):
+    if skin := pool.get(Skin, msg.account):
         msg.data["bag"]["items"].extend(skin.info.items)
         msg.amended = True
 
@@ -64,7 +64,7 @@ def fetchBagInfo(msg: Msg):
 @manager.register(MsgType.Res, ".lq.Lobby.fetchTitleList")
 def fetchTitleList(msg: Msg):
     # 添加头衔
-    if skin := Skin.get(msg.account):
+    if skin := pool.get(Skin, msg.account):
         msg.data["title_list"] = skin.info.titles
         msg.amended = True
 
@@ -72,7 +72,7 @@ def fetchTitleList(msg: Msg):
 @manager.register(MsgType.Res, ".lq.Lobby.fetchAllCommonViews")
 def fetchAllCommonViews(msg: Msg):
     # 装扮本地数据替换
-    if skin := Skin.get(msg.account):
+    if skin := pool.get(Skin, msg.account):
         msg.data = skin.commonviews
         msg.amended = True
 
@@ -80,42 +80,24 @@ def fetchAllCommonViews(msg: Msg):
 @manager.register(MsgType.Res, ".lq.Lobby.fetchCharacterInfo")
 def fetchCharacterInfo(msg: Msg):
     # 全角色数据替换
-    if skin := Skin.get(msg.account):
-        msg.data = skin.characters
+    if skin := pool.get(Skin, msg.account):
+        msg.data = skin.characterinfo
         msg.amended = True
 
 
 @manager.register(MsgType.Res, ".lq.Lobby.fetchAccountInfo")
 def fetchAccountInfo(msg: Msg):
     # 修改状态面板立绘、头衔
-    if skin := Skin.get(msg.data["account"]["account_id"]):
-        _update(msg.data["account"], skin.account, "loading_image")
+    if skin := pool.get(Skin, msg.data["account"]["account_id"]):
+        skin.update_player(msg.data["account"], "loading_image")
         msg.amended = True
 
 
 @manager.register(MsgType.Res, ".lq.FastTest.authGame")
 def authGame(msg: Msg):
     # 进入对局时
-    if skin := Skin.get(msg.account):
-        if skin.game_uuid in skin.games:
-            msg.data["players"] = skin.games[skin.game_uuid]
-        else:
-            for player in msg.data["players"]:
-                # 替换头像，角色、头衔
-                if other := Skin.get(player["account_id"]):
-                    _update(player, other.player)
-
-                    if conf.plugin.random_star_char:
-                        random_char = other.random_star_character
-                        player["character"] = random_char
-                        player["avatar_id"] = random_char["skin"]
-                # 其他玩家报菜名，对机器人无效
-                else:
-                    player["character"].update(
-                        {"level": 5, "exp": 1, "is_upgraded": True}
-                    )
-
-                skin.games[skin.game_uuid] = msg.data["players"]
+    if skin := pool.get(Skin, msg.account):
+        msg.data["players"] = pool.one(GameInfo, skin.game_uuid, msg.data["players"])
         msg.amended = True
 
 
@@ -123,18 +105,17 @@ def authGame(msg: Msg):
 
 
 @manager.register(MsgType.Req, ".lq.FastTest.authGame")
-def enterGame(msg: Msg):
+def authGame(msg: Msg):
     # 记录当前对局 UUID
-    if skin := Skin.get(msg.account):
+    if skin := pool.get(Skin, msg.account):
         skin.game_uuid = msg.data["game_uuid"]
 
 
 @manager.register(MsgType.Req, ".lq.Lobby.changeMainCharacter")
 def changeMainCharacter(msg: Msg):
     # 修改主角色时
-    if skin := Skin.get(msg.account):
-        skin.characters["main_character_id"] = msg.data["character_id"]
-        skin.account["avatar_id"] = skin.character["skin"]
+    if skin := pool.get(Skin, msg.account):
+        skin.main_character_id = msg.data["character_id"]
         skin.save()
 
         msg.drop()
@@ -144,19 +125,13 @@ def changeMainCharacter(msg: Msg):
 @manager.register(MsgType.Req, ".lq.Lobby.changeCharacterSkin")
 def changeCharacterSkin(msg: Msg):
     # 修改角色皮肤时
-    if skin := Skin.get(msg.account):
-        skin.get_character(msg.data["character_id"])["skin"] = msg.data["skin"]
-        skin.account["avatar_id"] = skin.character["skin"]
+    if skin := pool.get(Skin, msg.account):
+        character = skin.character_of(msg.data["character_id"])
+        character["skin"] = msg.data["skin"]
         skin.save()
 
         msg.notify(
-            data={
-                "update": {
-                    "character": {
-                        "characters": [skin.get_character(msg.data["character_id"])]
-                    }
-                }
-            },
+            data={"update": {"character": {"characters": [character]}}},
             method=".lq.NotifyAccountUpdate",
         ).inject()
 
@@ -167,8 +142,8 @@ def changeCharacterSkin(msg: Msg):
 @manager.register(MsgType.Req, ".lq.Lobby.updateCharacterSort")
 def updateCharacterSort(msg: Msg):
     # 修改星标角色时
-    if skin := Skin.get(msg.account):
-        skin.characters["character_sort"] = msg.data["sort"]
+    if skin := pool.get(Skin, msg.account):
+        skin.characterinfo["character_sort"] = msg.data["sort"]
         skin.save()
 
         msg.drop()
@@ -178,8 +153,8 @@ def updateCharacterSort(msg: Msg):
 @manager.register(MsgType.Req, ".lq.Lobby.useTitle")
 def useTitle(msg: Msg):
     # 选择头衔时
-    if skin := Skin.get(msg.account):
-        skin.account["title"] = msg.data["title"]
+    if skin := pool.get(Skin, msg.account):
+        skin.title = msg.data["title"]
         skin.save()
 
         msg.drop()
@@ -189,8 +164,8 @@ def useTitle(msg: Msg):
 @manager.register(MsgType.Req, ".lq.Lobby.modifyNickname")
 def modifyNickname(msg: Msg):
     # 修改昵称时
-    if skin := Skin.get(msg.account):
-        skin.account["nickname"] = msg.data["nickname"]
+    if skin := pool.get(Skin, msg.account):
+        skin.nickname = msg.data["nickname"]
         skin.save()
 
         msg.drop()
@@ -200,8 +175,8 @@ def modifyNickname(msg: Msg):
 @manager.register(MsgType.Req, ".lq.Lobby.setLoadingImage")
 def setLoadingImage(msg: Msg):
     # 选择加载图时
-    if skin := Skin.get(msg.account):
-        skin.account["loading_image"] = msg.data["images"]
+    if skin := pool.get(Skin, msg.account):
+        skin.loading_image = msg.data["images"]
         skin.save()
 
         msg.drop()
@@ -211,8 +186,8 @@ def setLoadingImage(msg: Msg):
 @manager.register(MsgType.Req, ".lq.Lobby.useCommonView")
 def useCommonView(msg: Msg):
     # 选择装扮时
-    if skin := Skin.get(msg.account):
-        skin.commonviews["use"] = msg.data["index"]
+    if skin := pool.get(Skin, msg.account):
+        skin.use = msg.data["index"]
         skin.save()
 
         msg.drop()
@@ -222,7 +197,7 @@ def useCommonView(msg: Msg):
 @manager.register(MsgType.Req, ".lq.Lobby.saveCommonViews")
 def saveCommonViews(msg: Msg):
     # 修改装扮时
-    if skin := Skin.get(msg.account):
+    if skin := pool.get(Skin, msg.account):
         skin.commonviews["views"][msg.data["save_index"]]["values"] = msg.data["views"]
         skin.save()
 
@@ -237,24 +212,193 @@ def saveCommonViews(msg: Msg):
 def NotifyRoomPlayerUpdate(msg: Msg):
     # 房间中添加、减少玩家时修改立绘、头衔
     for player in msg.data["player_list"]:
-        if skin := Skin.get(player["account_id"]):
-            _update(player, skin.account)
+        if skin := pool.get(Skin, player["account_id"]):
+            skin.update_player(player)
             msg.amended = True
 
 
 @manager.register(MsgType.Notify, ".lq.NotifyGameFinishRewardV2")
 def NotifyGameFinishRewardV2(msg: Msg):
     # 终局结算时，不播放羁绊动画
-    if skin := Skin.get(msg.account):
+    if skin := pool.get(Skin, msg.account):
         msg.data["main_character"] = {"exp": 1, "add": 0, "level": 5}
         msg.amended = True
+
+
+class Skin:
+    @property
+    def use(self) -> int:
+        return self.commonviews["use"]
+
+    @use.setter
+    def use(self, value: int):
+        self.commonviews["use"] = value
+
+    @property
+    def main_character_id(self) -> int:
+        return self.characterinfo["main_character_id"]
+
+    @main_character_id.setter
+    def main_character_id(self, value: int):
+        self.characterinfo["main_character_id"] = value
+
+    @property
+    def slots(self) -> list[dict]:
+        return self.commonviews["views"][self.use].get("values", [])
+
+    @property
+    def views(self) -> dict:
+        return [
+            {
+                "type": 0,
+                "slot": slot["slot"],
+                "item_id_list": [],
+                "item_id": choice(slot["item_id_list"])
+                if slot["type"]
+                else slot["item_id"],
+            }
+            for slot in self.slots
+        ]
+
+    @property
+    def avatar_frame(self) -> int:
+        for slot in self.slots:
+            if slot["slot"] == 5:
+                return slot["item_id"]
+        return 0
+
+    @property
+    def character(self) -> dict:
+        return self.character_of(self.main_character_id)
+
+    @property
+    def random_star_character_and_skin(self) -> tuple[dict, int]:
+        if self.characterinfo["character_sort"]:
+            character = self.character_of(choice(self.characterinfo["character_sort"]))
+        else:
+            character = self.character
+        return character, character.get("skin")
+
+    @property
+    def avatar_id(self) -> int:
+        return self.character["skin"]
+
+    def __init__(self, msg: Msg) -> None:
+        self.info = info
+        self.path = self.info.root / "{}.json".format(msg.account)
+
+        # base attributes
+        self.keys = ["title", "nickname", "loading_image"]
+        self.title: int = None
+        self.nickname: str = None
+        self.loading_image: list = None
+
+        # temp attributes
+        self.game_uuid: str = None
+
+        self.update_self(msg.data.get("account"))
+
+        if exists(self.path):
+            self.load()
+        else:
+            self.init()
+
+    def character_of(self, charid: int) -> dict:
+        assert 200000 < charid < conf.server.max_charid
+        return self.characterinfo["characters"][charid - 200001]
+
+    def update_self(self, player: dict):
+        for key in player:
+            if key in self.keys:
+                setattr(self, key, player[key])
+
+    def update_player(self, player: dict, *exclude: str):
+        for key in player:
+            if key not in exclude and hasattr(self, key):
+                player[key] = getattr(self, key)
+
+    def save(self):
+        with open(self.path, "w", encoding="utf-8") as f:
+            data = {
+                "base": {k: getattr(self, k) for k in self.keys},
+                "commonviews": self.commonviews,
+                "characterinfo": self.characterinfo,
+            }
+
+            dump(data, f, ensure_ascii=False)
+
+    def load(self):
+        with open(self.path, "r", encoding="utf-8") as f:
+            data: dict = load(f)
+
+            base = data.get("base", data.get("account"))
+            self.commonviews = data.get("commonviews")
+            self.characterinfo = data.get("characterinfo", data.get("characters"))
+
+            for key in self.keys:
+                setattr(self, key, base[key])
+
+            self.update_characterinfo()
+
+    def init(self):
+        # commonviews
+        self.commonviews = {
+            "views": [{"values": [], "index": i} for i in range(0, 10)],
+            "use": 0,
+        }
+
+        # characterinfo
+        main_character_id = 200001
+        characters, skins = _characters_and_skins(200001, conf.server.max_charid)
+
+        self.characterinfo = {
+            "characters": characters,
+            "skins": skins,
+            "main_character_id": main_character_id,
+            "send_gift_limit": 2,
+            "character_sort": [],
+            "finished_endings": [],
+            "hidden_characters": [],
+            "rewarded_endings": [],
+            "send_gift_count": 0,
+        }
+
+        # save
+        self.save()
+
+    def update_characterinfo(self):
+        max = 200001 + len(self.characterinfo.get("characters"))
+
+        if max < conf.server.max_charid:
+            characters, skins = _characters_and_skins(max, conf.server.max_charid)
+
+            self.characterinfo.get("characters").extend(characters)
+            self.characterinfo.get("skins").extend(skins)
+            self.save()
+
+
+class GameInfo(list):
+    def __init__(self, players: list[dict]):
+        for player in players:
+            if skin := pool.get(Skin, player["account_id"]):
+                # 替换对局头像，角色、头衔
+                skin.update_player(player)
+
+                if conf.plugin.random_star_char:
+                    (
+                        player["character"],
+                        player["avatar_id"],
+                    ) = skin.random_star_character_and_skin
+            else:
+                # 其他玩家报菜名，对机器人无效
+                player["character"].update({"level": 5, "exp": 1, "is_upgraded": True})
+        super().__init__(players)
 
 
 class SkinInfo:
     """Poor implementation of cfg.item_definition"""
 
     def __init__(self) -> None:
-        # 可用头像框
         included_frames = {305529, 305537, 305542, 305545, 305551, 305552} | set(
             range(305520, 305524)
         )
@@ -274,7 +418,6 @@ class SkinInfo:
             # 600044,
         } | set(range(600057, 600064))
 
-        # ...
         self.titles = list(set(range(600002, 600082)).difference(excluded_titles))
 
         self.items = [
@@ -282,190 +425,10 @@ class SkinInfo:
             for i in set(range(305001, 309000)).difference(excluded_items)
         ]
 
-        self.path = root / "account"
+        self.root = root / "account"
 
-        if not exists(self.path):
-            mkdir(self.path)
+        if not exists(self.root):
+            mkdir(self.root)
 
 
-class Skin:
-    skins: dict[int, type["Skin"]] = dict()
-    games: dict[str, dict] = dict()
-    info: SkinInfo = SkinInfo()
-
-    @classmethod
-    def one(cls, account):
-        if account in cls.skins:
-            one = cls.skins[account]
-        else:
-            one = cls.skins[account] = cls()
-        return one
-
-    @classmethod
-    def get(cls, account_id):
-        return cls.skins.get(account_id)
-
-    def __init__(self) -> None:
-        self.profile = ""
-        self.game_uuid = ""
-        self.original_char = (200001, 400101)
-
-        self.characters = {}
-        self.commonviews = {}
-
-        # default account structure
-        self.account = {
-            "title": 0,
-            "nickname": 0,
-            "avatar_id": 0,
-            "account_id": 0,
-            "loading_image": 0,
-        }
-
-    @property
-    def random_star_character(self) -> dict[str, any]:
-        return (
-            self.get_character(choice(self.characters["character_sort"]))
-            if self.characters["character_sort"]
-            else self.character
-        )
-
-    @property
-    def random_character(self) -> dict[str, any]:
-        return self.get_character(randint(200001, conf.server.max_charid - 1))
-
-    @property
-    def avatar_frame(self) -> int:
-        for slot in self.commonviews["views"][self.commonviews["use"]]["values"]:
-            if slot["slot"] == 5:
-                return slot["item_id"]
-        return 0
-
-    @property
-    def character(self) -> dict[str, any]:
-        return self.get_character(self.characters["main_character_id"])
-
-    @property
-    def player(self) -> dict[str, any]:
-        (
-            player := {
-                "views": self.views,
-                "character": self.character,
-                "avatar_frame": self.avatar_frame,
-            }
-        ).update(self.account)
-
-        return player
-
-    @property
-    def views(self) -> dict[str, any]:
-        return [
-            {
-                "type": 0,
-                "slot": slot["slot"],
-                "item_id_list": [],
-                "item_id": choice(slot["item_id_list"])
-                if slot["type"]
-                else slot["item_id"],
-            }
-            for slot in self.commonviews["views"][self.commonviews["use"]]["values"]
-        ]
-
-    def save(self) -> None:
-        with open(self.profile, "w", encoding="utf-8") as f:
-            dump(
-                {
-                    "account": self.account,
-                    "characters": self.characters,
-                    "commonviews": self.commonviews,
-                },
-                f,
-                ensure_ascii=False,
-            )
-
-    def read(self) -> None:
-        with open(self.profile, "r", encoding="utf-8") as f:
-            dict_conf = load(f)
-
-            self.characters = dict_conf.get("characters")
-            self.commonviews = dict_conf.get("commonviews")
-            self.account.update(dict_conf.get("account"))
-
-            self.update()
-
-    def get_character(self, charid: int) -> dict:
-        assert 200000 < charid < conf.server.max_charid
-        return self.characters["characters"][charid - 200001]
-
-    def init(self) -> None:
-        # commonviews
-        self.commonviews = {"views": [{}] * 10, "use": 0}
-        for i in range(0, 10):
-            self.commonviews["views"][i] = {"values": [], "index": i}
-
-        # characters
-        self.characters = {
-            "characters": [],
-            "skins": [],
-            "main_character_id": 200001,
-            "send_gift_limit": 2,
-            "character_sort": [],
-            "finished_endings": [],
-            "hidden_characters": [],
-            "rewarded_endings": [],
-            "send_gift_count": 0,
-        }
-
-        # 200001 一姬
-        # 200002 二姐
-        # ......
-        # 200075
-        for charid in range(200001, conf.server.max_charid):
-            skin = 400000 + (charid - 200000) * 100 + 1
-            character = {
-                "charid": charid,
-                "level": 5,
-                "exp": 1,
-                "skin": skin,
-                "extra_emoji": [],
-                "is_upgraded": True,
-                "rewarded_level": [],
-                "views": [],
-            }
-
-            self.characters["characters"].append(character)
-            for skin_id in range(skin, skin + 9):
-                self.characters["skins"].append(skin_id)
-
-        # sync origin char
-        self.characters["main_character_id"] = self.original_char[0]
-        self.character["skin"] = self.original_char[1]
-
-        self.save()
-
-    def update(self) -> None:
-        # characters
-        if len(self.characters["characters"]) == conf.server.max_charid - 200001:
-            return
-
-        for charid in range(
-            len(self.characters["characters"]) + 200001,
-            conf.server.max_charid,
-        ):
-            skin = 400000 + (charid - 200000) * 100 + 1
-            character = {
-                "charid": charid,
-                "level": 5,
-                "exp": 1,
-                "skin": skin,
-                "extra_emoji": [],
-                "is_upgraded": True,
-                "rewarded_level": [],
-                "views": [],
-            }
-
-            self.characters["characters"].append(character)
-            for skin_id in range(skin, skin + 9):
-                self.characters["skins"].append(skin_id)
-
-        self.save()
+info = SkinInfo()

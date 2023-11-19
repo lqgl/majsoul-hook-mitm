@@ -1,5 +1,32 @@
+from typing import TypeVar
+
 from . import conf, logger
 from .proto.liqi import Msg, MsgType
+
+
+T = TypeVar("T")
+K = TypeVar("K", str, int)
+
+
+class ObjectPool:
+    def __init__(self) -> None:
+        self.pool: dict[type[T], dict[K, T]] = {}
+
+    def one(self, cls: type[T], key: K, *args, **kwargs) -> T:
+        if cls not in self.pool:
+            self.pool[cls] = {}
+        if key not in self.pool[cls]:
+            self.pool[cls][key] = cls(*args, **kwargs)
+        return self.pool[cls][key]
+
+    def get(self, cls: type[T], key: K) -> T:
+        try:
+            return self.pool[cls][key]
+        except KeyError:
+            return None
+
+
+pool = ObjectPool()
 
 
 def log(msg: Msg):

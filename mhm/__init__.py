@@ -46,40 +46,44 @@ class Config:
             self.plugin = self.Plugin(**self.plugin)
 
 
+base = {
+    "mhm": {
+        "log_level": "info",
+        "pure_python_protobuf": False,
+    },
+    "server": {
+        "version": "0.10.286.w",
+        "max_charid": 200077,
+    },
+    "plugin": {
+        "enable_skins": True,
+        "enable_aider": False,
+        "enable_chest": False,
+        "random_star_char": False,
+    },
+    "dump": {
+        "with_dumper": False,
+        "with_termlog": True,
+    },
+    "mitmdump": {
+        "http2": False,
+        "mode": ["socks5@127.0.0.1:7070"],
+    },
+    "proxinject": {
+        "name": "jantama_mahjongsoul",
+        "set-proxy": "127.0.0.1:7070",
+    },
+}
+
 if exists(path := root / "mhmp.json"):
     with open(path, "r") as f:
-        conf = Config(**load(f))
+        data: dict = load(f)
+        for key in ["mhm", "server", "plugin"]:
+            data[key] = {**base[key], **data[key]}
+    conf = Config(**data)
 else:
-    conf = Config(
-        **{
-            "mhm": {
-                "log_level": "info",
-                "pure_python_protobuf": False,
-            },
-            "server": {
-                "version": "0.10.286.w",
-                "max_charid": 200077,
-            },
-            "plugin": {
-                "enable_skins": True,
-                "enable_aider": False,
-                "enable_chest": False,
-                "random_star_char": False,
-            },
-            "dump": {
-                "with_dumper": False,
-                "with_termlog": True,
-            },
-            "mitmdump": {
-                "http2": False,
-                "mode": ["socks5@127.0.0.1:7070"],
-            },
-            "proxinject": {
-                "name": "jantama_mahjongsoul",
-                "set-proxy": "127.0.0.1:7070",
-            },
-        }
-    )
+    conf = Config(**base)
+del base
 
 
 def fetch_maxid():

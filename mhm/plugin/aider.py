@@ -7,7 +7,7 @@ from urllib3.exceptions import InsecureRequestWarning
 from socket import socket, AF_INET, SOCK_STREAM
 
 from mhm import root
-from mhm.events import manager
+from mhm.events import manager, pool
 from mhm.proto.liqi import Msg, MsgType
 
 
@@ -19,7 +19,7 @@ def handle(msg: Msg):
     if not msg.account or msg.type == MsgType.Req:
         return
 
-    aider = Aider.one(msg.account)
+    aider = pool.one(Aider, msg.account)
 
     if msg.method == ".lq.ActionPrototype":
         if msg.data["name"] == "ActionNewRound":
@@ -37,24 +37,15 @@ def handle(msg: Msg):
 
 
 class Aider:
-    port: int = 43410
-
-    _all_: dict[int, type["Aider"]] = {}
-
-    @classmethod
-    def one(cls, account):
-        if account in cls._all_:
-            one = cls._all_[account]
-        else:
-            one = cls._all_[account] = cls()
-        return one
+    PORT = 43410
 
     def __init__(self) -> None:
         with socket(AF_INET, SOCK_STREAM) as s:
             s.settimeout(0.2)
-            if s.connect_ex(("127.0.0.1", self.port)) != 0:
-                cmd = f'start cmd /c "title Console · 🀄 && {root / "common/endless/mahjong-helper"} -majsoul -p {self.port}"'
+            if s.connect_ex(("127.0.0.1", Aider.PORT)) != 0:
+                cmd = f'start cmd /c "title Console · 🀄 && {root / "common/endless/mahjong-helper"} -majsoul -p {Aider.PORT}"'
                 system(cmd)
 
-        self.api = f"https://127.0.0.1:{self.port}"
-        self.__class__.port += 1
+        self.api = f"https://127.0.0.1:{Aider.PORT}"
+
+        Aider.PORT += 1
