@@ -1,4 +1,4 @@
-from json import load, dump
+from json import load, dump, loads, dumps
 from os.path import exists
 from os import mkdir
 from random import choice
@@ -14,7 +14,7 @@ def _character(charid: int) -> dict:
         "level": 5,
         "exp": 1,
         "skin": charid % 1000 * 100 + 400001,
-        "extra_emoji": [],
+        "extra_emoji": [10, 11, 12],
         "is_upgraded": True,
         "rewarded_level": [],
         "views": [],
@@ -97,6 +97,7 @@ def fetchAccountInfo(msg: Msg):
 def authGame(msg: Msg):
     # 进入对局时
     if skin := pool.get(Skin, msg.account):
+        skin.seat = msg.data["seat_list"].index(msg.account)
         msg.data["players"] = pool.one(GameInfo, skin.game_uuid, msg.data["players"])
         msg.amended = True
 
@@ -109,6 +110,20 @@ def authGame(msg: Msg):
     # 记录当前对局 UUID
     if skin := pool.get(Skin, msg.account):
         skin.game_uuid = msg.data["game_uuid"]
+
+
+@manager.register(MsgType.Req, ".lq.FastTest.broadcastInGame")
+def broadcastInGame(msg: Msg):
+    # 发送未持有的表情时
+    emo = loads(msg.data["content"])["emo"]
+    if emo > 8 and (skin := pool.get(Skin, msg.account)):
+        msg.notify(
+            data={"seat": skin.seat, "content": dumps({"emo": emo})},
+            method=".lq.NotifyGameBroadcast",
+        ).inject()
+
+        msg.drop()
+        msg.respond().inject()
 
 
 @manager.register(MsgType.Req, ".lq.Lobby.changeMainCharacter")
@@ -294,6 +309,7 @@ class Skin:
         self.loading_image: list = None
 
         # temp attributes
+        self.seat: int = None
         self.game_uuid: str = None
 
         self.update_self(msg.data.get("account"))
@@ -368,6 +384,10 @@ class Skin:
 
     def update_characterinfo(self):
         max = 200001 + len(self.characterinfo.get("characters"))
+
+        for character in self.characterinfo.get("characters"):
+            if not character.get("extra_emoji"):
+                character["extra_emoji"] = [10, 11, 12]
 
         if max < conf.server.max_charid:
             characters, skins = _characters_and_skins(max, conf.server.max_charid)
