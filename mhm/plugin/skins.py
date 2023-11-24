@@ -3,9 +3,48 @@ from os.path import exists
 from os import mkdir
 from random import choice
 
-from mhm import root, conf
+from mhm import ROOT, conf, resver
 from mhm.events import manager, pool
 from mhm.proto.liqi import Msg, MsgType
+
+
+class SkinInfo:
+    """Poor implementation of cfg.item_definition"""
+
+    def __init__(self) -> None:
+        included_frames = {305529, 305537, 305542, 305545, 305551, 305552} | set(
+            range(305520, 305524)
+        )
+
+        excluded_items = {305214, 305314, 305526, 305725} | set(
+            range(305501, 305556)
+        ).difference(included_frames)
+
+        excluded_titles = {
+            600030,
+            600043,
+            # 600017,
+            # 600024,
+            # 600025,
+            # 600029,
+            # 600041,
+            # 600044,
+        } | set(range(600057, 600064))
+
+        self.titles = list(set(range(600002, 600082)).difference(excluded_titles))
+
+        self.items = [
+            {"item_id": i, "stack": 1}
+            for i in set(range(305001, 309000)).difference(excluded_items)
+        ]
+
+
+INFO = SkinInfo()
+
+SKIN_PATH = ROOT / "account"
+
+if not exists(SKIN_PATH):
+    mkdir(SKIN_PATH)
 
 
 def _character(charid: int) -> dict:
@@ -14,7 +53,7 @@ def _character(charid: int) -> dict:
         "level": 5,
         "exp": 1,
         "skin": charid % 1000 * 100 + 400001,
-        "extra_emoji": [10, 11, 12],
+        "extra_emoji": resver.emos.get(str(charid)),
         "is_upgraded": True,
         "rewarded_level": [],
         "views": [],
@@ -42,7 +81,7 @@ def login(msg: Msg):
 
 @manager.register(MsgType.Res, ".lq.Lobby.joinRoom")
 @manager.register(MsgType.Res, ".lq.Lobby.fetchRoom")
-@manager.register(MsgType.Res, ".lq.Lobby.createRoom")  # login
+@manager.register(MsgType.Res, ".lq.Lobby.createRoom")  # room
 def joinRoom(msg: Msg):
     # 在加入、获取、创建房间时修改己方头衔、立绘、角色
     if "room" not in msg.data:
@@ -299,8 +338,8 @@ class Skin:
         return self.character["skin"]
 
     def __init__(self, msg: Msg) -> None:
-        self.info = info
-        self.path = self.info.root / "{}.json".format(msg.account)
+        self.info = INFO
+        self.path = SKIN_PATH / "{}.json".format(msg.account)
 
         # base attributes
         self.keys = ["title", "nickname", "loading_image"]
@@ -320,7 +359,7 @@ class Skin:
             self.init()
 
     def character_of(self, charid: int) -> dict:
-        assert 200000 < charid < conf.server.max_charid
+        assert 200000 < charid < resver.max_charid
         return self.characterinfo["characters"][charid - 200001]
 
     def update_self(self, player: dict):
@@ -365,7 +404,7 @@ class Skin:
 
         # characterinfo
         main_character_id = 200001
-        characters, skins = _characters_and_skins(200001, conf.server.max_charid)
+        characters, skins = _characters_and_skins(200001, resver.max_charid)
 
         self.characterinfo = {
             "characters": characters,
@@ -386,11 +425,10 @@ class Skin:
         max = 200001 + len(self.characterinfo.get("characters"))
 
         for character in self.characterinfo.get("characters"):
-            if not character.get("extra_emoji"):
-                character["extra_emoji"] = [10, 11, 12]
+            character["extra_emoji"] = resver.emos.get(str(character["charid"]))
 
-        if max < conf.server.max_charid:
-            characters, skins = _characters_and_skins(max, conf.server.max_charid)
+        if max < resver.max_charid:
+            characters, skins = _characters_and_skins(max, resver.max_charid)
 
             self.characterinfo.get("characters").extend(characters)
             self.characterinfo.get("skins").extend(skins)
@@ -413,42 +451,3 @@ class GameInfo(list):
                 # 其他玩家报菜名，对机器人无效
                 player["character"].update({"level": 5, "exp": 1, "is_upgraded": True})
         super().__init__(players)
-
-
-class SkinInfo:
-    """Poor implementation of cfg.item_definition"""
-
-    def __init__(self) -> None:
-        included_frames = {305529, 305537, 305542, 305545, 305551, 305552} | set(
-            range(305520, 305524)
-        )
-
-        excluded_items = {305214, 305314, 305526, 305725} | set(
-            range(305501, 305556)
-        ).difference(included_frames)
-
-        excluded_titles = {
-            600030,
-            600043,
-            # 600017,
-            # 600024,
-            # 600025,
-            # 600029,
-            # 600041,
-            # 600044,
-        } | set(range(600057, 600064))
-
-        self.titles = list(set(range(600002, 600082)).difference(excluded_titles))
-
-        self.items = [
-            {"item_id": i, "stack": 1}
-            for i in set(range(305001, 309000)).difference(excluded_items)
-        ]
-
-        self.root = root / "account"
-
-        if not exists(self.root):
-            mkdir(self.root)
-
-
-info = SkinInfo()

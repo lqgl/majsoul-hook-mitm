@@ -6,10 +6,12 @@ from urllib3 import disable_warnings
 from urllib3.exceptions import InsecureRequestWarning
 from socket import socket, AF_INET, SOCK_STREAM
 
-from mhm import root
+from mhm import ROOT
 from mhm.events import manager, pool
 from mhm.proto.liqi import Msg, MsgType
 
+
+AIDER = ROOT / "common/endless/mahjong-helper"
 
 disable_warnings(InsecureRequestWarning)
 
@@ -43,7 +45,7 @@ class Aider:
         with socket(AF_INET, SOCK_STREAM) as s:
             s.settimeout(0.2)
             if s.connect_ex(("127.0.0.1", Aider.PORT)) != 0:
-                cmd = f'start cmd /c "title Console · 🀄 && {root / "common/endless/mahjong-helper"} -majsoul -p {Aider.PORT}"'
+                cmd = f'start cmd /c "title Console · 🀄 && {AIDER} -majsoul -p {Aider.PORT}"'
                 system(cmd)
 
         self.api = f"https://127.0.0.1:{Aider.PORT}"

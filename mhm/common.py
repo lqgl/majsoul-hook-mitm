@@ -1,6 +1,9 @@
 import asyncio
 
-from . import root, logger, conf, init
+from . import ROOT, logger, conf, resver, init
+
+
+PROXINJECTOR = ROOT / "common/proxinject/proxinjector-cli"
 
 
 def _cmd(dict):
@@ -24,7 +27,7 @@ async def start_proxy():
 
 async def start_inject():
     cmd = [
-        root / "common/proxinject/proxinjector-cli",
+        PROXINJECTOR,
         *_cmd(conf.proxinject),
     ]
 
@@ -47,9 +50,9 @@ def main():
         logger.info(f"[i]log level: {conf.mhm.log_level}")
         logger.info(f"[i]pure python protobuf: {conf.mhm.pure_python_protobuf}")
 
-        if conf.server:
-            logger.info(f"[i]version: {conf.server.version}")
-            logger.info(f"[i]max charid: {conf.server.max_charid}")
+        if resver.version:
+            logger.info(f"[i]version: {resver.version}")
+            logger.info(f"[i]max charid: {resver.max_charid}")
 
         if conf.mitmdump:
             loop.create_task(start_proxy())

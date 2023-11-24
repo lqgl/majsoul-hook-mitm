@@ -1,12 +1,12 @@
 from random import random, choice
 
-from mhm import conf
+from mhm import resver
 from mhm.events import manager
 from mhm.proto.liqi import Msg, MsgType
 
 DEFAULT_CHEST = [
     # CHARACTERS
-    (0.05, list(range(200003, conf.server.max_charid - 1))),
+    (0.05, list(range(200003, resver.max_charid - 1))),
     # VIEWS
     (0.2, list(set(range(305001, 305056)).difference({305043, 305047}))),
     # GIFTS
