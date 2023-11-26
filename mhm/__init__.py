@@ -1,5 +1,6 @@
 from rich.console import Console
 from rich.logging import RichHandler
+from collections import defaultdict
 from dataclasses import dataclass, asdict, field
 from os.path import exists
 from os import environ
@@ -33,6 +34,7 @@ class Conf:
         enable_aider: bool = False
         enable_chest: bool = False
         random_star_char: bool = False
+        no_cheering_emotes: bool = False
 
     mhm: Base = field(
         default_factory=lambda: Conf.Base(),
@@ -104,7 +106,7 @@ def fetch_resver():
     response.raise_for_status()
     res_data: dict = response.json()
 
-    emos: dict[str, list] = {}
+    emos: defaultdict[str, list[int]] = defaultdict(list)
     pattern = rf"en\/extendRes\/emo\/e(\d+)\/(\d+)\.png"
 
     for text in res_data.get("res"):
@@ -116,8 +118,6 @@ def fetch_resver():
 
             if emo == 13:
                 continue
-            if charid not in emos:
-                emos[charid] = []
             emos[charid].append(emo)
     for value in emos.values():
         value.sort()
@@ -130,9 +130,17 @@ def fetch_resver():
         dump(asdict(resver), f)
 
 
+def no_cheering_emotes():
+    exclude = set(range(13, 19))
+    for emo in resver.emos.values():
+        emo[:] = list(set(emo) - exclude)
+
+
 def init():
     with console.status("[magenta]Fetch the latest server version") as status:
         fetch_resver()
+    if conf.plugin.no_cheering_emotes:
+        no_cheering_emotes()
     if conf.mhm.pure_python_protobuf:
         environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
