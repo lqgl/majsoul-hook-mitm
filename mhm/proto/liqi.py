@@ -157,7 +157,7 @@ class Proto:
             if msg_type == MsgType.Req:
                 assert msg_id < 1 << 16
                 assert len(msg_block) == 2
-                assert msg_id not in self.res_type
+                assert (flow.id, msg_id) not in self.res_type
                 method_name = msg_block[0]["data"].decode()
                 prototype, res_prototype = getPrototype(method_name, msg_type)
                 proto_obj = prototype.FromString(msg_block[1]["data"])
@@ -167,14 +167,14 @@ class Proto:
                     including_default_value_fields=True,
                 )
 
-                self.res_type[msg_id] = (
+                self.res_type[(flow.id, msg_id)] = (
                     method_name,
                     res_prototype,
                 )
             elif msg_type == MsgType.Res:
                 assert len(msg_block[0]["data"]) == 0
-                assert msg_id in self.res_type
-                method_name, prototype = self.res_type.pop(msg_id)
+                assert (flow.id, msg_id) in self.res_type
+                method_name, prototype = self.res_type.pop((flow.id, msg_id))
                 proto_obj = prototype.FromString(msg_block[1]["data"])
                 dict_obj = MessageToDict(
                     proto_obj,

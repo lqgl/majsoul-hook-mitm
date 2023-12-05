@@ -31,37 +31,39 @@ async def start_inject():
         *_cmd(conf.proxinject),
     ]
 
-    process = await asyncio.subprocess.create_subprocess_exec(
-        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-    )
+    while True:
+        process = await asyncio.subprocess.create_subprocess_exec(
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
 
-    stdout, stderr = await process.communicate()
+        stdout, stderr = await process.communicate()
 
-    await asyncio.sleep(0.8)
-    asyncio.create_task(start_inject())
+        await asyncio.sleep(0.8)
 
 
 def main():
-    try:
-        init()
-
-        loop = asyncio.get_event_loop()
-
+    async def start():
         logger.info(f"[i]log level: {conf.mhm.log_level}")
         logger.info(f"[i]pure python protobuf: {conf.mhm.pure_python_protobuf}")
 
-        if resver.version:
-            logger.info(f"[i]version: {resver.version}")
-            logger.info(f"[i]max charid: {resver.max_charid}")
+        logger.info(f"[i]version: {resver.version}")
+        logger.info(f"[i]max charid: {resver.max_charid}")
+
+        tasks = set()
 
         if conf.mitmdump:
-            loop.create_task(start_proxy())
+            tasks.add(start_proxy())
             logger.info(f"[i]mitmdump launched @ {len(conf.mitmdump.get('mode'))} mode")
 
         if conf.proxinject:
-            loop.create_task(start_inject())
+            tasks.add(start_inject())
             logger.info(f"[i]proxinject launched @ {conf.proxinject.get('set-proxy')}")
 
-        loop.run_forever()
+        await asyncio.gather(*tasks)
+
+    init()
+
+    try:
+        asyncio.run(start())
     except KeyboardInterrupt:
         pass

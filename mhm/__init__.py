@@ -133,7 +133,7 @@ def fetch_resver():
 def no_cheering_emotes():
     exclude = set(range(13, 19))
     for emo in resver.emos.values():
-        emo[:] = list(set(emo) - exclude)
+        emo[:] = sorted(set(emo) - exclude)
 
 
 def init():
