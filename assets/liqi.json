@@ -1625,7 +1625,8 @@
                   "rule": "repeated",
                   "type": "uint32",
                   "id": 3
-                }
+                },
+                "unlocked": { "type": "uint32", "id": 4 }
               }
             }
           }
@@ -2580,6 +2581,10 @@
               "rule": "repeated",
               "type": "AccountRechargeInfo",
               "id": 6
+            },
+            "month_ticket_v2": {
+              "type": "AccountMonthTicketSnapshotV2",
+              "id": 7
             }
           },
           "nested": {
@@ -2614,6 +2619,14 @@
                 "level": { "type": "uint32", "id": 1 },
                 "recharge_time": { "type": "uint32", "id": 2 }
               }
+            },
+            "AccountMonthTicketSnapshotV2": {
+              "fields": {
+                "end_time": { "type": "uint32", "id": 1 },
+                "last_pay_time": { "type": "uint32", "id": 2 },
+                "record_start_time": { "type": "uint32", "id": 3 },
+                "history": { "rule": "repeated", "type": "uint32", "id": 4 }
+              }
             }
           }
         },
@@ -2637,6 +2650,14 @@
             "account_id": { "type": "uint32", "id": 1 },
             "time": { "type": "uint32", "id": 2 },
             "snapshot": { "type": "bytes", "id": 3 }
+          }
+        },
+        "TransparentData": {
+          "fields": {
+            "method": { "type": "string", "id": 1 },
+            "data": { "type": "bytes", "id": 2 },
+            "session": { "type": "string", "id": 3 },
+            "remote": { "type": "NetworkEndpoint", "id": 4 }
           }
         },
         "Lobby": {
@@ -3207,7 +3228,7 @@
               "responseType": "ResMonthTicketInfo"
             },
             "payMonthTicket": {
-              "requestType": "ReqPayMonthTicket",
+              "requestType": "ReqCommon",
               "responseType": "ResPayMonthTicket"
             },
             "exchangeCurrency": {
@@ -3736,6 +3757,10 @@
             },
             "unlockActivitySpot": {
               "requestType": "ReqUnlockActivitySpot",
+              "responseType": "ResCommon"
+            },
+            "unlockActivitySpotEnding": {
+              "requestType": "ReqUnlockActivitySpotEnding",
               "responseType": "ResCommon"
             },
             "receiveActivitySpotReward": {
@@ -5611,11 +5636,7 @@
         "ResMonthTicketInfo": {
           "fields": {
             "error": { "type": "Error", "id": 2 },
-            "month_ticket_info": {
-              "rule": "repeated",
-              "type": "MonthTicketInfo",
-              "id": 1
-            }
+            "month_ticket_info": { "type": "MonthTicketInfo", "id": 1 }
           }
         },
         "ReqExchangeCurrency": {
@@ -6716,6 +6737,9 @@
           }
         },
         "ReqUnlockActivitySpot": {
+          "fields": { "unique_id": { "type": "uint32", "id": 1 } }
+        },
+        "ReqUnlockActivitySpotEnding": {
           "fields": {
             "unique_id": { "type": "uint32", "id": 1 },
             "ending_id": { "type": "uint32", "id": 2 }

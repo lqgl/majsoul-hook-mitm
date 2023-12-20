@@ -49,6 +49,7 @@ service Lobby {
 	rpc changeMainCharacter (ReqChangeMainCharacter) returns (ResCommon);
 	rpc checkPrivacy (ReqCheckPrivacy) returns (ResCommon);
 	rpc clientMessage (ReqClientMessage) returns (ResCommon);
+	rpc combiningRecycleCraft (ReqCombiningRecycleCraft) returns (ResCombiningRecycleCraft);
 	rpc completeActivityFlipTask (ReqCompleteActivityTask) returns (ResCommon);
 	rpc completeActivityTask (ReqCompleteActivityTask) returns (ResCommon);
 	rpc completePeriodActivityTask (ReqCompleteActivityTask) returns (ResCommon);
@@ -161,6 +162,7 @@ service Lobby {
 	rpc fetchGameRecordList (ReqGameRecordList) returns (ResGameRecordList);
 	rpc fetchGameRecordsDetail (ReqGameRecordsDetail) returns (ResGameRecordsDetail);
 	rpc fetchIDCardInfo (ReqCommon) returns (ResIDCardInfo);
+	rpc fetchInfo (ReqCommon) returns (ResFetchInfo);
 	rpc fetchJPCommonCreditCardOrder (ReqFetchJPCommonCreditCardOrder) returns (ResFetchJPCommonCreditCardOrder);
 	rpc fetchLastPrivacy (ReqFetchLastPrivacy) returns (ResFetchLastPrivacy);
 	rpc fetchLevelLeaderboard (ReqLevelLeaderboard) returns (ResLevelLeaderboard);
@@ -193,6 +195,7 @@ service Lobby {
 	rpc fetchTitleList (ReqCommon) returns (ResTitleList);
 	rpc fetchVipReward (ReqCommon) returns (ResVipReward);
 	rpc fetchVoteActivity (ReqFetchVoteActivity) returns (ResFetchVoteActivity);
+	rpc finishCombiningOrder (ReqFinishCombiningOrder) returns (ResFinishCombiningOrder);
 	rpc followCustomizedContest (ReqTargetCustomizedContest) returns (ResCommon);
 	rpc forceCompleteChallengeTask (ReqForceCompleteChallengeTask) returns (ResCommon);
 	rpc gainAccumulatedPointActivityReward (ReqGainAccumulatedPointActivityReward) returns (ResCommon);
@@ -201,6 +204,7 @@ service Lobby {
 	rpc gainReviveCoin (ReqCommon) returns (ResCommon);
 	rpc gainVipReward (ReqGainVipReward) returns (ResCommon);
 	rpc gameMasterCommand (ReqGMCommand) returns (ResCommon);
+	rpc generateCombiningCraft (ReqGenerateCombiningCraft) returns (ResGenerateCombiningCraft);
 	rpc goNextShiLian (ReqCommon) returns (ResCommon);
 	rpc handleFriendApply (ReqHandleFriendApply) returns (ResCommon);
 	rpc heatbeat (ReqHeatBeat) returns (ResCommon);
@@ -224,6 +228,7 @@ service Lobby {
 	rpc modifyPassword (ReqModifyPassword) returns (ResCommon);
 	rpc modifyRoom (ReqModifyRoom) returns (ResCommon);
 	rpc modifySignature (ReqModifySignature) returns (ResCommon);
+	rpc moveCombiningCraft (ReqMoveCombiningCraft) returns (ResMoveCombiningCraft);
 	rpc oauth2Auth (ReqOauth2Auth) returns (ResOauth2Auth);
 	rpc oauth2Check (ReqOauth2Check) returns (ResOauth2Check);
 	rpc oauth2Login (ReqOauth2Login) returns (ResLogin);
@@ -235,7 +240,7 @@ service Lobby {
 	rpc openPreChestItem (ReqOpenPreChestItem) returns (ResOpenPreChestItem);
 	rpc openRandomRewardItem (ReqOpenRandomRewardItem) returns (ResOpenRandomRewardItem);
 	rpc openidCheck (ReqOpenidCheck) returns (ResOauth2Check);
-	rpc payMonthTicket (ReqPayMonthTicket) returns (ResPayMonthTicket);
+	rpc payMonthTicket (ReqCommon) returns (ResPayMonthTicket);
 	rpc quitABMatch (ReqCommon) returns (ResCommon);
 	rpc readAnnouncement (ReqReadAnnouncement) returns (ResCommon);
 	rpc readGameRecord (ReqGameRecord) returns (ResCommon);
@@ -257,6 +262,7 @@ service Lobby {
 	rpc receiveRPGRewards (ReqReceiveRPGRewards) returns (ResReceiveRPGRewards);
 	rpc receiveUpgradeActivityReward (ReqReceiveUpgradeActivityReward) returns (ResReceiveUpgradeActivityReward);
 	rpc receiveVersionReward (ReqCommon) returns (ResCommon);
+	rpc recoverCombiningRecycle (ReqRecoverCombiningRecycle) returns (ResRecoverCombiningRecycle);
 	rpc refreshChallenge (ReqCommon) returns (ResRefreshChallenge);
 	rpc refreshDailyTask (ReqRefreshDailyTask) returns (ResRefreshDailyTask);
 	rpc refreshGameObserveAuth (ReqRefreshGameObserveAuth) returns (ResRefreshGameObserveAuth);
@@ -293,6 +299,7 @@ service Lobby {
 	rpc unbindPhoneNumber (ReqUnbindPhoneNumber) returns (ResCommon);
 	rpc unfollowCustomizedContest (ReqTargetCustomizedContest) returns (ResCommon);
 	rpc unlockActivitySpot (ReqUnlockActivitySpot) returns (ResCommon);
+	rpc unlockActivitySpotEnding (ReqUnlockActivitySpotEnding) returns (ResCommon);
 	rpc updateAccountSettings (ReqUpdateAccountSettings) returns (ResCommon);
 	rpc updateCharacterSort (ReqUpdateCharacterSort) returns (ResCommon);
 	rpc updateClientValue (ReqUpdateClientValue) returns (ResCommon);
@@ -415,6 +422,7 @@ message AccountActivityUpdate {
 	repeated lq.ActivityUpgradeData upgrade_data = 6;
 	repeated lq.ActivityGachaUpdateData gacha_data = 7;
 	repeated lq.ActivitySimulationData simulation_data = 8;
+	repeated ActivityCombiningLQData combining_data = 9;
 }
 
 message AccountCacheView {
@@ -582,13 +590,24 @@ message AccountMiscSnapshot {
 	AccountVIP vip = 3;
 	ShopInfo shop_info = 4;
 	AccountMonthTicketSnapshot month_ticket = 5;
-	repeated AccountRechargeInfo recharged = 6;
+	AccountRechargeInfo recharged = 6;
+	AccountMonthTicketSnapshotV2 month_ticket_v2 = 7;
 	message AccountMonthTicketSnapshot {
 		repeated MonthTicketInfo tickets = 1;
 	}
+	message AccountMonthTicketSnapshotV2 {
+		uint32 end_time = 1;
+		uint32 last_pay_time = 2;
+		uint32 record_start_time = 3;
+		repeated uint32 history = 4;
+	}
 	message AccountRechargeInfo {
-		uint32 level = 1;
-		uint32 recharge_time = 2;
+		repeated RechargeRecord records = 1;
+		uint32 has_data = 2;
+		message RechargeRecord {
+			uint32 level = 1;
+			uint32 recharge_time = 2;
+		}
 	}
 	message AccountVIP {
 		uint32 vip = 1;
@@ -620,6 +639,7 @@ message AccountResourceSnapshot {
 	repeated CurrencySnapshot currency = 2;
 	TitleSnapshot title = 3;
 	UsedTitleSnapshot used_title = 4;
+	uint32 currency_convert = 5;
 	message BagItemSnapshot {
 		uint32 resource_id = 1;
 		uint32 resource_count = 2;
@@ -811,6 +831,7 @@ message ActionChiPengGang {
 	MuyuInfo muyu = 10;
 	repeated int32 scores = 11;
 	uint32 liqibang = 12;
+	YongchangInfo yongchang = 13;
 }
 
 message ActionDealTile {
@@ -842,6 +863,7 @@ message ActionDiscardTile {
 	bool revealed = 12;
 	repeated int32 scores = 13;
 	uint32 liqibang = 14;
+	YongchangInfo yongchang = 25;
 }
 
 message ActionFillAwaitingTiles {
@@ -944,6 +966,7 @@ message ActionNewRound {
 	uint32 ju_count = 17;
 	uint32 field_spell = 18;
 	string sha256 = 19;
+	YongchangInfo yongchang = 20;
 }
 
 message ActionNoTile {
@@ -1015,6 +1038,57 @@ message ActivityArenaData {
 message ActivityBuffData {
 	uint32 buff_id = 1;
 	uint32 level = 5;
+}
+
+message ActivityCombiningData {
+	uint32 activity_id = 1;
+	repeated ActivityCombiningWorkbench workbench = 2;
+	repeated ActivityCombiningOrderData orders = 3;
+	ActivityCombiningWorkbench recycle_bin = 4;
+	ActivityCombiningMenuData menu = 5;
+	uint32 current_order_id = 6;
+	BonusData bonus = 7;
+	repeated uint32 unlocked_craft = 8;
+	repeated ActivityCombiningPoolData craft_pool = 9;
+	repeated ActivityCombiningPoolData order_pool = 10;
+	message BonusData {
+		uint32 count = 1;
+		uint32 update_time = 2;
+	}
+}
+
+message ActivityCombiningLQData {
+	uint32 activity_id = 1;
+	repeated ActivityCombiningWorkbench workbench = 2;
+	repeated ActivityCombiningOrderData orders = 3;
+	ActivityCombiningWorkbench recycle_bin = 4;
+	repeated uint32 unlocked_craft = 5;
+}
+
+message ActivityCombiningMenuData {
+	uint32 menu_group = 1;
+	repeated MenuRequire generated = 2;
+	message MenuRequire {
+		uint32 level = 1;
+		uint32 count = 2;
+	}
+}
+
+message ActivityCombiningOrderData {
+	uint32 id = 1;
+	uint32 pos = 2;
+	uint32 craft_id = 3;
+	uint32 unlock_day = 4;
+}
+
+message ActivityCombiningPoolData {
+	uint32 group = 1;
+	uint32 count = 2;
+}
+
+message ActivityCombiningWorkbench {
+	uint32 craft_id = 1;
+	uint32 pos = 2;
 }
 
 message ActivityFeedData {
@@ -1121,6 +1195,7 @@ message ActivitySpotData {
 		uint32 unique_id = 1;
 		uint32 rewarded = 2;
 		repeated uint32 unlocked_ending = 3;
+		uint32 unlocked = 4;
 	}
 }
 
@@ -1554,6 +1629,7 @@ message GameDetailRule {
 	uint32 disable_angang_guoshi = 67;
 	uint32 enable_renhe = 68;
 	uint32 enable_baopai_extend_settings = 69;
+	uint32 yongchang_mode = 70;
 }
 
 message GameEnd {
@@ -2327,7 +2403,7 @@ message NotifyRoomPlayerUpdate {
 	repeated PlayerBaseView update_list = 1;
 	repeated uint32 remove_list = 2;
 	uint32 owner_id = 3;
-	optional uint32 robot_count = 4;
+	uint32 robot_count = 4;
 	repeated PlayerBaseView player_list = 5;
 	uint32 seq = 6;
 }
@@ -2518,6 +2594,7 @@ message RecordChiPengGang {
 	MuyuInfo muyu = 10;
 	repeated int32 scores = 11;
 	uint32 liqibang = 12;
+	YongchangInfo yongchang = 13;
 }
 
 message RecordCollectedData {
@@ -2552,6 +2629,7 @@ message RecordDiscardTile {
 	repeated OptionalOperationList operations = 10;
 	uint32 tile_state = 11;
 	MuyuInfo muyu = 12;
+	YongchangInfo yongchang = 13;
 }
 
 message RecordFillAwaitingTiles {
@@ -2732,6 +2810,7 @@ message RecordNewRound {
 	uint32 ju_count = 20;
 	uint32 field_spell = 21;
 	string sha256 = 22;
+	YongchangInfo yongchang = 23;
 	message TingPai {
 		uint32 seat = 1;
 		repeated TingPaiInfo tingpais1 = 2;
@@ -2987,6 +3066,11 @@ message ReqChiPengGang {
 message ReqClientMessage {
 	uint32 timestamp = 1;
 	string message = 2;
+}
+
+message ReqCombiningRecycleCraft {
+	uint32 activity_id = 1;
+	uint32 pos = 2;
 }
 
 message ReqCommon {
@@ -3470,6 +3554,12 @@ message ReqFetchVoteActivity {
 	uint32 activity_id = 1;
 }
 
+message ReqFinishCombiningOrder {
+	uint32 activity_id = 1;
+	uint32 craft_pos = 2;
+	uint32 order_pos = 3;
+}
+
 message ReqFinishedEnding {
 	uint32 character_id = 1;
 	uint32 story_id = 2;
@@ -3537,6 +3627,11 @@ message ReqGameRecordList {
 
 message ReqGameRecordsDetail {
 	repeated string uuid_list = 1;
+}
+
+message ReqGenerateCombiningCraft {
+	uint32 activity_id = 1;
+	uint32 bin_id = 2;
 }
 
 message ReqHandleFriendApply {
@@ -3623,6 +3718,12 @@ message ReqModifyRoom {
 
 message ReqModifySignature {
 	string signature = 1;
+}
+
+message ReqMoveCombiningCraft {
+	uint32 activity_id = 1;
+	uint32 from = 2;
+	uint32 to = 3;
 }
 
 message ReqMultiAccountId {
@@ -3770,6 +3871,10 @@ message ReqReceiveRPGRewards {
 }
 
 message ReqReceiveUpgradeActivityReward {
+	uint32 activity_id = 1;
+}
+
+message ReqRecoverCombiningRecycle {
 	uint32 activity_id = 1;
 }
 
@@ -3978,6 +4083,10 @@ message ReqUnbindPhoneNumber {
 
 message ReqUnlockActivitySpot {
 	uint32 unique_id = 1;
+}
+
+message ReqUnlockActivitySpotEnding {
+	uint32 unique_id = 1;
 	uint32 ending_id = 2;
 }
 
@@ -4097,6 +4206,7 @@ message ResAccountActivityData {
 	repeated lq.ActivityUpgradeData upgrade_data = 21;
 	repeated lq.ActivityGachaUpdateData gacha_data = 22;
 	repeated lq.ActivitySimulationData simulation_data = 23;
+	repeated lq.ActivityCombiningLQData combining_data = 24;
 	message ActivityRichmanData {
 		uint32 activity_id = 1;
 		uint32 location = 2;
@@ -4294,6 +4404,11 @@ message ResCollectedGameRecordList {
 	Error error = 1;
 	repeated RecordCollectedData record_list = 2;
 	uint32 record_collect_limit = 3;
+}
+
+message ResCombiningRecycleCraft {
+	Error error = 1;
+	repeated ExecuteReward reward_items = 2;
 }
 
 message ResCommentSetting {
@@ -4706,6 +4821,38 @@ message ResFetchFriendGiftActivityData {
 	}
 }
 
+message ResFetchInfo {
+	Error error = 1;
+	ResServerTime server_time = 2;
+	ResServerSettings server_setting = 3;
+	ResClientValue client_value = 4;
+	ResFriendList friend_list = 5;
+	ResFriendApplyList friend_apply_list = 6;
+	ResFetchrecentFriend recent_friend = 7;
+	ResMailInfo mail_info = 8;
+	ResReviveCoinInfo receive_coin_info = 9;
+	ResTitleList title_list = 10;
+	ResBagInfo bag_info = 11;
+	ResShopInfo shop_info = 12;
+	ResFetchShopInterval shop_interval = 13;
+	ResAccountActivityData activity_data = 14;
+	ResFetchActivityInterval activity_interval = 15;
+	ResActivityBuff activity_buff = 16;
+	ResVipReward vip_reward = 17;
+	ResMonthTicketInfo month_ticket_info = 18;
+	ResAchievement achievement = 19;
+	ResCommentSetting comment_setting = 20;
+	ResAccountSettings account_settings = 21;
+	ResModNicknameTime mod_nickname_time = 22;
+	ResMisc misc = 23;
+	ResAnnouncement announcement = 24;
+	ReqRollingNotice rolling_notice = 25;
+	ResActivityList activity_list = 26;
+	ResCharacterInfo character_info = 27;
+	ResAllcommonViews all_common_views = 28;
+	ResCollectedGameRecordList collected_game_record_list = 29;
+}
+
 message ResFetchJPCommonCreditCardOrder {
 	Error error = 1;
 }
@@ -4851,6 +4998,11 @@ message ResFetchrecentFriend {
 	repeated uint32 account_list = 2;
 }
 
+message ResFinishCombiningOrder {
+	Error error = 1;
+	repeated ExecuteReward reward_items = 2;
+}
+
 message ResFriendApplyList {
 	Error error = 1;
 	repeated FriendApply applies = 2;
@@ -4927,6 +5079,12 @@ message ResGameRecordsDetail {
 	repeated RecordGame record_list = 2;
 }
 
+message ResGenerateCombiningCraft {
+	Error error = 1;
+	uint32 pos = 2;
+	uint32 craft_id = 3;
+}
+
 message ResIDCardInfo {
 	Error error = 1;
 	bool is_authed = 2;
@@ -4997,8 +5155,20 @@ message ResModNicknameTime {
 }
 
 message ResMonthTicketInfo {
-	repeated MonthTicketInfo month_ticket_info = 1;
+	MonthTicketInfo month_ticket_info = 1;
 	Error error = 2;
+}
+
+message ResMoveCombiningCraft {
+	Error error = 1;
+	uint32 pos = 2;
+	uint32 combined = 3;
+	uint32 craft_id = 4;
+	BonusData bonus = 5;
+	message BonusData {
+		uint32 craft_id = 1;
+		uint32 pos = 2;
+	}
 }
 
 message ResMultiAccountBrief {
@@ -5146,6 +5316,12 @@ message ResReceiveRPGRewards {
 message ResReceiveUpgradeActivityReward {
 	Error error = 1;
 	repeated ExecuteReward rewards = 2;
+}
+
+message ResRecoverCombiningRecycle {
+	Error error = 1;
+	uint32 craft_id = 2;
+	uint32 pos = 3;
 }
 
 message ResRefreshChallenge {
@@ -5456,6 +5632,13 @@ message TingPaiInfo {
 	uint32 fu_zimo = 9;
 }
 
+message TransparentData {
+	string method = 1;
+	bytes data = 2;
+	string session = 3;
+	NetworkEndpoint remote = 4;
+}
+
 message ViewSlot {
 	uint32 slot = 1;
 	uint32 item_id = 2;
@@ -5472,6 +5655,14 @@ message VoteData {
 message Wrapper {
 	string name = 1;
 	bytes data = 2;
+}
+
+message YongchangInfo {
+	uint32 seat = 1;
+	uint32 moqie_count = 2;
+	uint32 moqie_bonus = 3;
+	uint32 shouqie_count = 4;
+	uint32 shouqie_bonus = 5;
 }
 
 message ZHPShop {
