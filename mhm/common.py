@@ -47,7 +47,7 @@ def main():
         logger.info(f"[i]pure python protobuf: {conf.mhm.pure_python_protobuf}")
 
         logger.info(f"[i]version: {resver.version}")
-        logger.info(f"[i]max charid: {resver.max_charid}")
+        logger.info(f"[i]characters: {len(resver.emotes)}")
 
         tasks = set()
 

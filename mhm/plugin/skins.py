@@ -47,24 +47,29 @@ if not exists(SKIN_PATH):
     mkdir(SKIN_PATH)
 
 
-def _character(charid: int) -> dict:
-    return {
-        "charid": charid,
-        "level": 5,
-        "exp": 1,
-        "skin": charid % 1000 * 100 + 400001,
-        "extra_emoji": resver.emos.get(str(charid)),
-        "is_upgraded": True,
-        "rewarded_level": [],
-        "views": [],
-    }
+def _skin(charid: int) -> int:
+    return charid % 1000 * 100 + 400001
 
 
-def _characters_and_skins(charid_x: int, charid_y: int):
-    characters = [_character(i) for i in range(charid_x, charid_y)]
-    skins = [idx for c in characters for idx in range(c["skin"], c["skin"] + 9)]
+def _skins(charid_set):
+    for m in charid_set:
+        i = _skin(m)
+        for n in range(i, i + 9):
+            yield n
 
-    return characters, skins
+
+def _characters(charid_set):
+    for m in charid_set:
+        yield {
+            "charid": m,
+            "level": 5,
+            "exp": 1,
+            "skin": _skin(m),
+            "extra_emoji": resver.emotes.get(str(m)),
+            "is_upgraded": True,
+            "rewarded_level": [],
+            "views": [],
+        }
 
 
 """Response"""
@@ -90,6 +95,17 @@ def joinRoom(msg: Msg):
         if skin := pool.get(Skin, person["account_id"]):
             skin.update_player(person)
             msg.amended = True
+
+
+@manager.register(MsgType.Res, ".lq.Lobby.fetchInfo")
+def fetchInfo(msg: Msg):
+    # 替换信息
+    if skin := pool.get(Skin, msg.account):
+        msg.data["bag_info"]["bag"]["items"].extend(skin.info.items)
+        msg.data["title_list"]["title_list"] = skin.info.titles
+        msg.data["all_common_views"] = skin.commonviews
+        msg.data["character_info"] = skin.characterinfo
+        msg.amended = True
 
 
 @manager.register(MsgType.Res, ".lq.Lobby.fetchBagInfo")
@@ -359,8 +375,9 @@ class Skin:
             self.init()
 
     def character_of(self, charid: int) -> dict:
-        assert 200000 < charid < resver.max_charid
-        return self.characterinfo["characters"][charid - 200001]
+        for character in self.characterinfo["characters"]:
+            if charid == character.get("charid"):
+                return character
 
     def update_self(self, player: dict):
         for key in player:
@@ -403,8 +420,11 @@ class Skin:
         }
 
         # characterinfo
+        res_charid_set = set(map(int, resver.emotes.keys()))
+
         main_character_id = 200001
-        characters, skins = _characters_and_skins(200001, resver.max_charid)
+        skins = list(_skins(res_charid_set))
+        characters = list(_characters(res_charid_set))
 
         self.characterinfo = {
             "characters": characters,
@@ -422,17 +442,22 @@ class Skin:
         self.save()
 
     def update_characterinfo(self):
-        max = 200001 + len(self.characterinfo.get("characters"))
+        charid_set = {i.get("charid") for i in self.characterinfo["characters"]}
+        res_charid_set = set(map(int, resver.emotes.keys()))
 
-        for character in self.characterinfo.get("characters"):
-            character["extra_emoji"] = resver.emos.get(str(character["charid"]))
+        skins: list[int] = self.characterinfo.get("skins")
+        characters: list[dict] = self.characterinfo.get("characters")
 
-        if max < resver.max_charid:
-            characters, skins = _characters_and_skins(max, resver.max_charid)
+        for m in characters:
+            m["extra_emoji"] = resver.emotes.get(str(m["charid"]))
 
-            self.characterinfo.get("characters").extend(characters)
-            self.characterinfo.get("skins").extend(skins)
-            self.save()
+        if remove_m := sorted(charid_set - res_charid_set):
+            skins[:] = [m for m in skins if m not in _skins(remove_m)]
+            characters[:] = [m for m in characters if m.get("charid") not in remove_m]
+
+        if extend_m := sorted(res_charid_set - charid_set):
+            skins.extend(_skins(extend_m))
+            characters.extend(_characters(extend_m))
 
 
 class GameInfo(list):

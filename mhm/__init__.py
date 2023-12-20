@@ -17,8 +17,16 @@ RESVER_PATH = ROOT / "resver.json"
 @dataclass
 class ResVer:
     version: str = None
-    max_charid: int = None
-    emos: dict[str, list] = None
+    emotes: dict[str, list] = None
+
+    @classmethod
+    def fromdict(cls, data: dict):
+        # purge
+        if "max_charid" in data:
+            data.pop("max_charid")
+        if "emos" in data:
+            data["emotes"] = data.pop("emos")
+        return cls(**data)
 
 
 @dataclass
@@ -79,7 +87,7 @@ else:
     conf = Conf()
 
 if exists(RESVER_PATH):
-    resver = ResVer(**load(open(RESVER_PATH, "r")))
+    resver = ResVer.fromdict(load(open(RESVER_PATH, "r")))
 else:
     resver = ResVer()
 
@@ -106,7 +114,7 @@ def fetch_resver():
     response.raise_for_status()
     res_data: dict = response.json()
 
-    emos: defaultdict[str, list[int]] = defaultdict(list)
+    emotes: defaultdict[str, list[int]] = defaultdict(list)
     pattern = rf"en\/extendRes\/emo\/e(\d+)\/(\d+)\.png"
 
     for text in res_data.get("res"):
@@ -118,13 +126,12 @@ def fetch_resver():
 
             if emo == 13:
                 continue
-            emos[charid].append(emo)
-    for value in emos.values():
+            emotes[charid].append(emo)
+    for value in emotes.values():
         value.sort()
 
     resver.version = version
-    resver.max_charid = 200001 + len(emos)
-    resver.emos = {key: value[9:] for key, value in sorted(emos.items())}
+    resver.emotes = {key: value[9:] for key, value in sorted(emotes.items())}
 
     with open(RESVER_PATH, "w") as f:
         dump(asdict(resver), f)
@@ -132,7 +139,7 @@ def fetch_resver():
 
 def no_cheering_emotes():
     exclude = set(range(13, 19))
-    for emo in resver.emos.values():
+    for emo in resver.emotes.values():
         emo[:] = sorted(set(emo) - exclude)
 
 
