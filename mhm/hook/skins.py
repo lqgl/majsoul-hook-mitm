@@ -144,7 +144,7 @@ class KinHook(Hook):
         def _(mger: MsgManager):
             # 进入对局时
             if mSkin := self.mapSkin.get(mger.member):
-                mSkin.seat = mger.data["seat_list"].index(mger.member)
+                mSkin.seat_list = mger.data["seat_list"]
 
                 if mGame := self.mapGame.get(mSkin.game_uuid):
                     mger.data["players"] = mGame
@@ -177,9 +177,11 @@ class KinHook(Hook):
             # 发送未持有的表情时
             emo = json.loads(mger.data["content"])["emo"]
             if emo > 8 and (mSkin := self.mapSkin.get(mger.member)):
-                mger.notify(
+                seat = mSkin.seat_list.index(mger.member)
+                mger.notify_match(
+                    ids=mSkin.seat_list,
                     method=".lq.NotifyGameBroadcast",
-                    data={"seat": mSkin.seat, "content": json.dumps({"emo": emo})},
+                    data={"seat": seat, "content": json.dumps({"emo": emo})},
                 )
                 mger.respond()
 
@@ -340,7 +342,7 @@ class Skin:
         self.loading_image: list = None
 
         # temp attributes
-        self.seat: int = None
+        self.seat_list: list = None
         self.game_uuid: str = None
 
         self.update_self(mger.data.get("account"))
