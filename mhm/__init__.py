@@ -8,10 +8,10 @@ from json import load, dump
 from logging import getLogger
 from pathlib import Path
 
-ROOT = Path(".")
+pRoot = Path(".")
 
-CONF_PATH = ROOT / "mhmp.json"
-RESVER_PATH = ROOT / "resver.json"
+pathConf = pRoot / "mhmp.json"
+pathResVer = pRoot / "resver.json"
 
 
 @dataclass
@@ -37,57 +37,50 @@ class Conf:
         pure_python_protobuf: bool = False
 
     @dataclass
-    class Plugin:
+    class Hook:
         enable_skins: bool = True
         enable_aider: bool = False
         enable_chest: bool = False
         random_star_char: bool = False
         no_cheering_emotes: bool = False
 
-    mhm: Base = field(
-        default_factory=lambda: Conf.Base(),
-    )
-    plugin: Plugin = field(
-        default_factory=lambda: Conf.Plugin(),
-    )
-    dump: dict = field(
-        default_factory=lambda: {
-            "with_dumper": False,
-            "with_termlog": True,
-        }
-    )
-    mitmdump: dict = field(
-        default_factory=lambda: {
-            "http2": False,
-            "mode": ["socks5@127.0.0.1:7070"],
-        }
-    )
-    proxinject: dict = field(
-        default_factory=lambda: {
-            "name": "jantama_mahjongsoul",
-            "set-proxy": "127.0.0.1:7070",
-        }
-    )
+    mhm: Base = None
+    hook: Hook = None
+    dump: dict = None
+    mitmdump: dict = None
+    proxinject: dict = None
+
+    @classmethod
+    def default(cls):
+        return cls(
+            mhm=cls.Base(),
+            hook=cls.Hook(),
+            dump={"with_dumper": False, "with_termlog": True},
+            mitmdump={"http2": False, "mode": ["socks5@127.0.0.1:7070"]},
+            proxinject={"name": "jantama_mahjongsoul", "set-proxy": "127.0.0.1:7070"},
+        )
 
     @classmethod
     def fromdict(cls, data: dict):
         # purge
-        if (tmp := "server") in data:
-            del data[tmp]
+        if "server" in data:
+            data.pop("server")
+        if "plugin" in data:
+            data["hook"] = data.pop("plugin")
         # to dataclass
-        for key, struct in [("mhm", cls.Base), ("plugin", cls.Plugin)]:
+        for key, struct in [("mhm", cls.Base), ("hook", cls.Hook)]:
             if key in data:
                 data[key] = struct(**data[key])
         return cls(**data)
 
 
-if exists(CONF_PATH):
-    conf = Conf.fromdict(load(open(CONF_PATH, "r")))
+if exists(pathConf):
+    conf = Conf.fromdict(load(open(pathConf, "r")))
 else:
-    conf = Conf()
+    conf = Conf.default()
 
-if exists(RESVER_PATH):
-    resver = ResVer.fromdict(load(open(RESVER_PATH, "r")))
+if exists(pathResVer):
+    resver = ResVer.fromdict(load(open(pathResVer, "r")))
 else:
     resver = ResVer()
 
@@ -133,7 +126,7 @@ def fetch_resver():
     resver.version = version
     resver.emotes = {key: value[9:] for key, value in sorted(emotes.items())}
 
-    with open(RESVER_PATH, "w") as f:
+    with open(pathResVer, "w") as f:
         dump(asdict(resver), f)
 
 
@@ -146,12 +139,12 @@ def no_cheering_emotes():
 def init():
     with console.status("[magenta]Fetch the latest server version") as status:
         fetch_resver()
-    if conf.plugin.no_cheering_emotes:
+    if conf.hook.no_cheering_emotes:
         no_cheering_emotes()
     if conf.mhm.pure_python_protobuf:
         environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
-    with open(CONF_PATH, "w") as f:
+    with open(pathConf, "w") as f:
         dump(asdict(conf), f, indent=2)
 
 

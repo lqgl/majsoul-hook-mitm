@@ -1,9 +1,9 @@
 import asyncio
 
-from . import ROOT, logger, conf, resver, init
+from . import pRoot, logger, conf, resver, init
 
 
-PROXINJECTOR = ROOT / "common/proxinject/proxinjector-cli"
+PROXINJECTOR = pRoot / "common/proxinject/proxinjector-cli"
 
 
 def _cmd(dict):
@@ -15,21 +15,14 @@ async def start_proxy():
     from mitmproxy.options import Options
     from .addons import addons
 
-    master = DumpMaster(
-        Options(**conf.mitmdump),
-        **conf.dump,
-    )
-
+    master = DumpMaster(Options(**conf.mitmdump), **conf.dump)
     master.addons.add(*addons)
     await master.run()
     return master
 
 
 async def start_inject():
-    cmd = [
-        PROXINJECTOR,
-        *_cmd(conf.proxinject),
-    ]
+    cmd = [PROXINJECTOR, *_cmd(conf.proxinject)]
 
     while True:
         process = await asyncio.subprocess.create_subprocess_exec(
