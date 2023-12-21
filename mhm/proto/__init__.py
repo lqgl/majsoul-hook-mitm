@@ -79,6 +79,10 @@ class MsgManager:
     def data(self) -> dict:
         return self.m.data
 
+    @data.setter
+    def data(self, value):
+        self.m.data = value
+
     @property
     def member(self) -> int | None:
         return self.account_ids.get(self.flow)
