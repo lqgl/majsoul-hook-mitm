@@ -2403,7 +2403,7 @@ message NotifyRoomPlayerUpdate {
 	repeated PlayerBaseView update_list = 1;
 	repeated uint32 remove_list = 2;
 	uint32 owner_id = 3;
-	uint32 robot_count = 4;
+	optional uint32 robot_count = 4;
 	repeated PlayerBaseView player_list = 5;
 	uint32 seq = 6;
 }
