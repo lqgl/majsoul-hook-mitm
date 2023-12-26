@@ -255,6 +255,32 @@ class KinHook(Hook):
                 mSkin.save()
                 mger.respond()
 
+        @self.bind(MsgType.Req, ".lq.Lobby.setHiddenCharacter")
+        def _(mger: MsgManager):
+            # 隐藏角色时
+            if mSkin := self.mapSkin.get(mger.member):
+                mSkin.characterinfo["hidden_characters"] = mger.data["chara_list"]
+                mSkin.save()
+                mger.respond({"hidden_characters": mger.data["chara_list"]})
+
+        @self.bind(MsgType.Req, ".lq.Lobby.addFinishedEnding")
+        def _(mger: MsgManager):
+            # 屏蔽传记完成请求
+            if mSkin := self.mapSkin.get(mger.member):
+                mger.respond()
+
+        @self.bind(MsgType.Req, ".lq.Lobby.receiveEndingReward")
+        def _(mger: MsgManager):
+            # 屏蔽传记奖励请求
+            if mSkin := self.mapSkin.get(mger.member):
+                mger.respond()
+
+        @self.bind(MsgType.Req, ".lq.Lobby.receiveCharacterRewards")
+        def _(mger: MsgManager):
+            # 屏蔽角色奖励请求
+            if mSkin := self.mapSkin.get(mger.member):
+                mger.respond()
+
         # Notify
 
         @self.bind(MsgType.Notify, ".lq.NotifyRoomPlayerUpdate")
