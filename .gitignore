@@ -169,3 +169,9 @@ embed/
 
 # Lnk
 *.lnk
+
+# Playwright data
+data
+
+# Mortal
+*.pth

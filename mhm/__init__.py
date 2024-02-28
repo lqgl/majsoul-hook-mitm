@@ -49,6 +49,7 @@ class Conf:
     dump: dict = None
     mitmdump: dict = None
     proxinject: dict = None
+    playwright: dict = None
 
     @classmethod
     def default(cls):
@@ -56,8 +57,9 @@ class Conf:
             mhm=cls.Base(),
             hook=cls.Hook(),
             dump={"with_dumper": False, "with_termlog": True},
-            mitmdump={"http2": False, "mode": ["socks5@127.0.0.1:7070"]},
+            mitmdump={"http2": False, "listen_host": "127.0.0.1", "listen_port": 7878, "mode": ["socks5@127.0.0.1:7070"]},
             proxinject={"name": "jantama_mahjongsoul", "set-proxy": "127.0.0.1:7070"},
+            playwright={"enable": False, "width": 1280, "height": 720}
         )
 
     @classmethod
