@@ -1,8 +1,8 @@
-﻿protobuf>=4.25.1
-mitmproxy>=10.1.6
+﻿protobuf==4.25.1
+mitmproxy==10.1.6
 numpy==1.26.3
 loguru==0.7.2
 playwright==1.41.0
-requests >=2.31.0
+requests ==2.31.0
 rich==13.7.0
-torch>=2.2.0
+torch==2.2.0
