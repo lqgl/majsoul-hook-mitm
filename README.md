@@ -52,7 +52,7 @@ python -m pip config set global.index-url https://mirror.nju.edu.cn/pypi/web/sim
 ```bash
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-playwright install chromium
+python -m playwright install chromium
 ```
 
 使用 Akagi 
@@ -84,8 +84,11 @@ python -m mhm
 | 随机星标皮肤 | random_star_char | true \| false |
 
 ## 有关代理模式
-mhm.json 中默认代理模式为 `"mode": ["socks5@127.0.0.1:7070"]`。
-如果需要设置上游代理的话，可以改为 `"mode": ["upstream@127.0.0.1:7890"]`, 示例为clash的7890端口。
+mhm.json 中默认代理模式为 `"mode": ["regular"]`。
+
+使用 steam 雀魂客户端, 修改为: `"mode": ["socks5"]`, `"proxinject": { "name": "jantama_mahjongsoul", "set-proxy": "127.0.0.1:7878"}`。
+
+网页加载慢可尝试使用上游代理，可以更改为 `"mode": ["upstream:http://127.0.0.1:7890/"]`, 示例为clash的7890端口。
 
 ## 特别感谢
 
