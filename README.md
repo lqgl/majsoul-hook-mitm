@@ -87,7 +87,7 @@ python -m mhm
 ## 有关代理模式
 mhm.json 中默认代理模式为 `"mode": ["regular"]`。
 
-使用 steam 雀魂客户端, 修改为: `"mode": ["socks5"]`, `"proxinject": { "name": "jantama_mahjongsoul", "set-proxy": "127.0.0.1:7878"}`。
+使用 steam 雀魂客户端, 修改为: `"mode": ["socks5"]`, `"proxinject": { "name": "jantama_mahjongsoul", "set-proxy": "127.0.0.1:7878"}`, 这里的7878端口是`mitm`监听的端口。
 
 网页加载慢可尝试使用上游代理，可以更改为 `"mode": ["upstream:http://127.0.0.1:7890/"]`, 示例为clash的7890端口。
 
