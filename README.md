@@ -57,8 +57,9 @@ python -m playwright install chromium
 
 使用 Akagi 
 
-> 你需要获取 [libriichi.so与libriichi.pyd](https://github.com/shinkuan/Akagi/tree/26ce7465bc5ba53ebf5e0b9d50f5465b1d638f08/mjai/bot) 和 [mortal.pth](https://discord.com/invite/Z2wjXUK8bN) 这3个文件，并分别放入mhm/mjai/bot文件夹中，记得更名。
-> 注: 文件版本需要和你当前的系统平台匹配。
+> 到 [Discord](https://discord.gg/Z2wjXUK8bN) 下载 Akagi 提供的 bot.zip。 注: 网盘中除v2版本均可用，任选一个下载，确保 bot 目录里面有且只有下面四个档案：bot.py, libriichi.so, model.py, mortal.pth 其中如果你是apple芯片的话，需要自行替换对应架构的 [libriichi.so](https://github.com/shinkuan/Akagi/tree/26ce7465bc5ba53ebf5e0b9d50f5465b1d638f08/mjai/bot/libriichi_builds) 文件。
+
+![bot目录](bot.png)
 
 启动 mhm
 
