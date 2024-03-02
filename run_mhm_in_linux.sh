@@ -1,3 +1,3 @@
 . venv/bin/activate
 python -m mhm
-read -p "按回车键继续"
+read -s -n1 -p "按任意键继续 ... "
