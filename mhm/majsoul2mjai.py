@@ -54,13 +54,13 @@ class MajsoulBridge:
     def parse_syncGame(self, syncGame):
         assert syncGame['method'] == '.lq.FastTest.syncGame' or syncGame['method'] == '.lq.FastTest.enterGame'
         msgs = []
-        if 'gameRestore' in syncGame['data']:
-            for action in syncGame['data']['gameRestore']['actions']:
+        if 'game_restore' in syncGame['data']:
+            logger.info(f"game_restore:{syncGame['data']['game_restore']}")
+            for action in syncGame['data']['game_restore']['actions']:
                 msgs.append(self.parse_syncGameActions(action))
         return msgs
     
     def parse_syncGameActions(self, dict_obj):
-        dict_obj['data'] = MessageToDict(getattr(pb, dict_obj['name']).FromString(base64.b64decode(dict_obj['data'])), including_default_value_fields=True)
         msg_id = -1
         result = {'id': msg_id, 'type': MsgType.Notify,
                     'method': '.lq.ActionPrototype', 'data': dict_obj}
