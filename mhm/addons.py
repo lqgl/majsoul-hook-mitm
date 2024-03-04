@@ -20,17 +20,17 @@ class WebSocketAddon:
     def __init__(self):
         self.manager = MsgManager()
 
-    # def request(self, flow: http.HTTPFlow):
-    #     if flow.request.method == "GET":
-    #         if re.search(r'^https://game\.maj\-soul\.(com|net)/[0-9]+/v[0-9\.]+\.w/code\.js$', flow.request.url):
-    #             print("====== GET code.js ======"*3)
-    #             print("====== GET code.js ======"*3)
-    #             print("====== GET code.js ======"*3)
-    #             flow.request.url = "http://cdn.jsdelivr.net/gh/Avenshy/majsoul_mod_plus/safe_code.js"
-    #         elif re.search(r'^https://game\.mahjongsoul\.com/v[0-9\.]+\.w/code\.js$', flow.request.url):
-    #             flow.request.url = "http://cdn.jsdelivr.net/gh/Avenshy/majsoul_mod_plus/safe_code.js"
-    #         elif re.search(r'^https://mahjongsoul\.game\.yo-star\.com/v[0-9\.]+\.w/code\.js$', flow.request.url):
-    #             flow.request.url = "http://cdn.jsdelivr.net/gh/Avenshy/majsoul_mod_plus/safe_code.js"
+    def request(self, flow: http.HTTPFlow):
+        if flow.request.method == "GET":
+            if re.search(r'^https://game\.maj\-soul\.(com|net)/[0-9]+/v[0-9\.]+\.w/code\.js$', flow.request.url):
+                print("====== GET code.js ======"*3)
+                print("====== GET code.js ======"*3)
+                print("====== GET code.js ======"*3)
+                flow.request.url = "http://cdn.jsdelivr.net/gh/Avenshy/majsoul_mod_plus/safe_code.js"
+            elif re.search(r'^https://game\.mahjongsoul\.com/v[0-9\.]+\.w/code\.js$', flow.request.url):
+                flow.request.url = "http://cdn.jsdelivr.net/gh/Avenshy/majsoul_mod_plus/safe_code.js"
+            elif re.search(r'^https://mahjongsoul\.game\.yo-star\.com/v[0-9\.]+\.w/code\.js$', flow.request.url):
+                flow.request.url = "http://cdn.jsdelivr.net/gh/Avenshy/majsoul_mod_plus/safe_code.js"
 
     def websocket_start(self, flow: http.HTTPFlow):
         logger.info(" ".join(["[i][green]Connected", flow.id[:13]]))
