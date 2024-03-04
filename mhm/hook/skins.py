@@ -55,8 +55,12 @@ class SkinInfo:
             # 600044,
         } | set(range(600057, 600064))
 
+        # HACK: item ids should be obtained from the file lqc.lqbin
+        from ._items import EXTENDED_ITEMS
+
         aItemList = sorted(set(range(305001, 309000)).difference(exItemSet))
         aItemList.append(SkinInfo.RENAME_SCROLL)
+        aItemList.extend(EXTENDED_ITEMS)
         aTitleList = sorted(set(range(600002, 600082)).difference(exTitleSet))
 
         self.titleList = aTitleList
