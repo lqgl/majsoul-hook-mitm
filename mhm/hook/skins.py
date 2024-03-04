@@ -33,6 +33,8 @@ def _characters(charid_set):
 
 
 class SkinInfo:
+    RENAME_SCROLL = 302013
+
     def __init__(self) -> None:
         inFrameSet = {305529, 305537, 305542, 305545, 305551, 305552} | set(
             range(305520, 305524)
@@ -54,6 +56,7 @@ class SkinInfo:
         } | set(range(600057, 600064))
 
         aItemList = sorted(set(range(305001, 309000)).difference(exItemSet))
+        aItemList.append(SkinInfo.RENAME_SCROLL)
         aTitleList = sorted(set(range(600002, 600082)).difference(exTitleSet))
 
         self.titleList = aTitleList
