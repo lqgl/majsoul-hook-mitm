@@ -50,6 +50,11 @@ def main():
         logger.info(f"[i]version: {resver.version}")
         logger.info(f"[i]characters: {len(resver.emotes)}")
 
+        logger.info(f"[i]enable auto next game: {conf.autoNextGame.enable_auto_next_game}")
+        logger.info(f"[i]next game Rank: {conf.autoNextGame.next_game_Rank}")
+        logger.info(f"[i]next game number: {conf.autoNextGame.next_game_number}")
+        logger.info(f"[i]next game rounds: {conf.autoNextGame.next_game_rounds}")
+
         tasks = set()
 
         if conf.mitmdump:
@@ -96,7 +101,139 @@ def main():
                 gm_msgs = get_messages()
                 if len(gm_msgs) > 0: 
                     gm_msg = gm_msgs.pop(0)
-                    parse_msg = {'id': gm_msg.id, 'type': gm_msg.type, 'method': gm_msg.method, 'data': gm_msg.data} 
+                    parse_msg = {'id': gm_msg.id, 'type': gm_msg.type, 'method': gm_msg.method, 'data': gm_msg.data}
+
+                    if conf.autoNextGame.enable_auto_next_game:
+                        if parse_msg['method'] == '.lq.NotifyGameEndResult':
+                            time.sleep(30)
+                            xy_scale = {"x": 14.75 * scale, "y": 8.3375 * scale}
+                            page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                            time.sleep(1)
+                            page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                            time.sleep(5)
+                            page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                            time.sleep(5)
+                            page.mouse.click(6.825 * scale, 6.8 * scale, delay=100)
+                            time.sleep(5)
+                            page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                            print(f"page_clicker_next_game: {xy_scale}")
+                            time.sleep(5)
+                            xy_scale = {"x": 11.5 * scale, "y": 2.75 * scale}
+                            page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                            time.sleep(0.5)
+                            page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                            print(f"page_clicker_next_game: {xy_scale}")
+                            time.sleep(1)
+                        elif parse_msg['method'] == '.lq.NotifyGameTerminate':
+                            time.sleep(8)
+                            xy_scale = {"x": 11.5 * scale, "y": 2.75 * scale}
+                            page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                            time.sleep(0.5)
+                            page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                            print(f"page_clicker_next_game: {xy_scale}")
+                            time.sleep(1)
+
+                        if parse_msg['method'] == '.lq.NotifyGameEndResult' or parse_msg[
+                            'method'] == '.lq.NotifyGameTerminate':
+                            if conf.autoNextGame.next_game_Rank == 'gold':
+                                xy_scale = {"x": 11.5 * scale, "y": 6.15 * scale}
+                                page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                                time.sleep(0.5)
+                                page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                                print(f"page_clicker_next_game_gold: {xy_scale}")
+                                time.sleep(1)
+                            elif conf.autoNextGame.next_game_Rank == 'silver':
+                                xy_scale = {"x": 11.5 * scale, "y": 4.825 * scale}
+                                page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                                time.sleep(0.5)
+                                page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                                print(f"page_clicker_next_game_silver: {xy_scale}")
+                                time.sleep(1)
+                            elif conf.autoNextGame.next_game_Rank == 'copper':
+                                xy_scale = {"x": 11.5 * scale, "y": 3.375 * scale}
+                                page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                                time.sleep(0.5)
+                                page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                                print(f"page_clicker_next_game_copper: {xy_scale}")
+                                time.sleep(1)
+                            elif conf.autoNextGame.next_game_Rank == 'jade':
+                                xy_scale = {"x": 11.5 * scale, "y": 6.15 * scale}
+                                page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                                time.sleep(0.5)
+                                page.mouse.wheel(0, 100)
+                                page.mouse.wheel(0, 100)
+                                page.mouse.wheel(0, 100)
+                                page.mouse.wheel(0, 100)
+                                time.sleep(2)
+                                xy_scale = {"x": 11.5 * scale, "y": 5.425 * scale}
+                                page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                                time.sleep(0.5)
+                                page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                                print(f"page_clicker_next_game_jade: {xy_scale}")
+                                time.sleep(1)
+                            elif conf.autoNextGame.next_game_Rank == 'king':
+                                xy_scale = {"x": 11.5 * scale, "y": 6.15 * scale}
+                                page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                                time.sleep(0.5)
+                                page.mouse.wheel(0, 100)
+                                page.mouse.wheel(0, 100)
+                                page.mouse.wheel(0, 100)
+                                page.mouse.wheel(0, 100)
+                                time.sleep(2)
+                                xy_scale = {"x": 11.5 * scale, "y": 6.825 * scale}
+                                page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                                time.sleep(0.5)
+                                page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                                print(f"page_clicker_next_game_king: {xy_scale}")
+                                time.sleep(1)
+
+                            if conf.autoNextGame.next_game_number == '4p':
+                                if conf.autoNextGame.next_game_rounds == 'south':
+                                    xy_scale = {"x": 11.5 * scale, "y": 4.7625 * scale}
+                                    page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                                    time.sleep(0.5)
+                                    page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                                    print(f"page_clicker_next_game_4p_south: {xy_scale}")
+                                    time.sleep(1)
+                                elif conf.autoNextGame.next_game_rounds == 'east':
+                                    xy_scale = {"x": 11.5 * scale, "y": 3.475 * scale}
+                                    page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                                    time.sleep(0.5)
+                                    page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                                    print(f"page_clicker_next_game_4p_east: {xy_scale}")
+                                    time.sleep(1)
+                            elif conf.autoNextGame.next_game_number == '3p':
+                                if conf.autoNextGame.next_game_rounds == 'south':
+                                    xy_scale = {"x": 11.5 * scale, "y": 6.15 * scale}
+                                    page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                                    time.sleep(0.5)
+                                    page.mouse.wheel(0, 100)
+                                    page.mouse.wheel(0, 100)
+                                    page.mouse.wheel(0, 100)
+                                    page.mouse.wheel(0, 100)
+                                    time.sleep(2)
+                                    xy_scale = {"x": 11.5 * scale, "y": 6.5625 * scale}
+                                    page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                                    time.sleep(0.5)
+                                    page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                                    print(f"page_clicker_next_game_3p_south: {xy_scale}")
+                                    time.sleep(1)
+                                elif conf.autoNextGame.next_game_rounds == 'east':
+                                    xy_scale = {"x": 11.5 * scale, "y": 6.15 * scale}
+                                    page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                                    time.sleep(0.5)
+                                    page.mouse.wheel(0, 100)
+                                    page.mouse.wheel(0, 100)
+                                    page.mouse.wheel(0, 100)
+                                    page.mouse.wheel(0, 100)
+                                    time.sleep(2)
+                                    xy_scale = {"x": 11.5 * scale, "y": 5.4 * scale}
+                                    page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                                    time.sleep(0.5)
+                                    page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                                    print(f"page_clicker_next_game_3p_east: {xy_scale}")
+                                    time.sleep(1)
+
                     if gm_msg.method == '.lq.ActionPrototype':
                         if 'operation' in gm_msg.data.get('data'):
                             if 'operation_list' in gm_msg.data.get('data').get('operation'):
