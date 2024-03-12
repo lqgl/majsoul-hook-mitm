@@ -1,9 +1,10 @@
-import re
+import re, json
 
 from . import logger
 from .hook import hooks
 from .proto import MsgManager
 from mitmproxy import http
+from urllib.parse import urlparse, parse_qs
 
 
 gm_msgs = [] # game msgs
@@ -31,6 +32,18 @@ class WebSocketAddon:
                 flow.request.url = "http://cdn.jsdelivr.net/gh/Avenshy/majsoul_mod_plus/safe_code.js"
             elif re.search(r'^https://mahjongsoul\.game\.yo-star\.com/v[0-9\.]+\.w/code\.js$', flow.request.url):
                 flow.request.url = "http://cdn.jsdelivr.net/gh/Avenshy/majsoul_mod_plus/safe_code.js"
+        parsed_url = urlparse(flow.request.url)
+        if parsed_url.hostname == "majsoul-hk-client.cn-hongkong.log.aliyuncs.com":
+            qs = parse_qs(parsed_url.query)
+            try:
+                content = json.loads(qs["content"][0])
+                if content["type"] == "re_err":
+                    logger.warning(" ".join(["[i][red]Error", str(qs)]))
+                    flow.kill()
+                else:
+                    logger.debug(" ".join(["[i][green]Log", str(qs)]))
+            except:
+                return
 
     def websocket_start(self, flow: http.HTTPFlow):
         logger.info(" ".join(["[i][green]Connected", flow.id[:13]]))
