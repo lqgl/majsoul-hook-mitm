@@ -44,12 +44,20 @@ class Conf:
         random_star_char: bool = False
         no_cheering_emotes: bool = False
 
+    @dataclass
+    class AutoNextGame:
+        enable_auto_next_game: bool = True
+        next_game_Rank: str = 'gold'
+        next_game_number: str = "4p"
+        next_game_rounds: str = "south"
+
     mhm: Base = None
     hook: Hook = None
     dump: dict = None
     mitmdump: dict = None
     proxinject: dict = None
     playwright: dict = None
+    autoNextGame: AutoNextGame = None
 
     @classmethod
     def default(cls):
@@ -59,7 +67,8 @@ class Conf:
             dump={"with_dumper": False, "with_termlog": True},
             mitmdump={"http2": False, "listen_host": "127.0.0.1", "listen_port": 7878, "mode": ["regular"]},
             proxinject=None,
-            playwright={"enable": True, "width": 1280, "height": 720}
+            playwright={"enable": True, "width": 1280, "height": 720},
+            autoNextGame=cls.AutoNextGame()
         )
 
     @classmethod
@@ -70,7 +79,7 @@ class Conf:
         if "plugin" in data:
             data["hook"] = data.pop("plugin")
         # to dataclass
-        for key, struct in [("mhm", cls.Base), ("hook", cls.Hook)]:
+        for key, struct in [("mhm", cls.Base), ("hook", cls.Hook), ("autoNextGame", cls.AutoNextGame)]:
             if key in data:
                 data[key] = struct(**data[key])
         return cls(**data)
