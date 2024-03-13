@@ -14,6 +14,29 @@ from mhm.addons import get_messages
 
 PROXINJECTOR = pRoot / "common/proxinject/proxinjector-cli"
 
+AUTO_GAME = {
+    "endGameStage": [
+        (14.75, 8.3375),
+        (6.825, 6.8),
+        (11.5, 2.75),
+    ],
+    "rankStage": [
+        (11.5, 6.15),
+        (11.5, 4.825),
+        (11.5, 3.375),
+        (11.5, 5.425),
+        (11.5, 6.825),
+    ],
+    "roomsAndRoundsStage": [
+        (11.5, 4.7625),
+        (11.5, 3.475),
+        (11.5, 6.15),
+        (11.5, 6.5625),
+        (11.5, 5.4),
+
+    ],
+}
+
 def _cmd(dict):
     return [obj for key, value in dict.items() for obj in (f"--{key}", value)]
 
@@ -106,58 +129,72 @@ def main():
                     if conf.autoNextGame.enable_auto_next_game:
                         if parse_msg['method'] == '.lq.NotifyGameEndResult':
                             time.sleep(20)
-                            xy_scale = {"x": 14.75 * scale, "y": 8.3375 * scale}
+                            xy_scale = {"x": AUTO_GAME['endGameStage'][0][0] * scale,
+                                        "y": AUTO_GAME['endGameStage'][0][1] * scale}
                             page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
-                            time.sleep(5)
+                            time.sleep(1)
                             page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                             time.sleep(5)
                             page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                             time.sleep(10)
-                            page.mouse.click(6.825 * scale, 6.8 * scale, delay=100)
-                            time.sleep(5)
+                            xy_scale = {"x": AUTO_GAME['endGameStage'][1][0] * scale,
+                                        "y": AUTO_GAME['endGameStage'][1][1] * scale}
+                            page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                            time.sleep(1)
                             page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
-                            print(f"page_clicker_next_game: {xy_scale}")
                             time.sleep(5)
-                            xy_scale = {"x": 11.5 * scale, "y": 2.75 * scale}
+                            xy_scale = {"x": AUTO_GAME['endGameStage'][0][0] * scale,
+                                        "y": AUTO_GAME['endGameStage'][0][1] * scale}
+                            page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+                            time.sleep(1)
+                            page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                            time.sleep(5)
+                            xy_scale = {"x": AUTO_GAME['endGameStage'][2][0] * scale,
+                                        "y": AUTO_GAME['endGameStage'][2][1] * scale}
                             page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                             time.sleep(0.5)
                             page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                             print(f"page_clicker_next_game: {xy_scale}")
-                            time.sleep(1)
+                            time.sleep(2)
                         elif parse_msg['method'] == '.lq.NotifyGameTerminate':
                             time.sleep(8)
-                            xy_scale = {"x": 11.5 * scale, "y": 2.75 * scale}
+                            xy_scale = {"x": AUTO_GAME['endGameStage'][2][0] * scale,
+                                        "y": AUTO_GAME['endGameStage'][2][1] * scale}
                             page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                             time.sleep(0.5)
                             page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                             print(f"page_clicker_next_game: {xy_scale}")
-                            time.sleep(1)
+                            time.sleep(2)
 
                         if parse_msg['method'] == '.lq.NotifyGameEndResult' or parse_msg[
                             'method'] == '.lq.NotifyGameTerminate':
                             if conf.autoNextGame.next_game_Rank == 'gold':
-                                xy_scale = {"x": 11.5 * scale, "y": 6.15 * scale}
+                                xy_scale = {"x": AUTO_GAME['rankStage'][0][0] * scale,
+                                            "y": AUTO_GAME['rankStage'][0][1] * scale}
                                 page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                 time.sleep(0.5)
                                 page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                                 print(f"page_clicker_next_game_gold: {xy_scale}")
-                                time.sleep(1)
+                                time.sleep(2)
                             elif conf.autoNextGame.next_game_Rank == 'silver':
-                                xy_scale = {"x": 11.5 * scale, "y": 4.825 * scale}
+                                xy_scale = {"x": AUTO_GAME['rankStage'][1][0] * scale,
+                                            "y": AUTO_GAME['rankStage'][1][1] * scale}
                                 page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                 time.sleep(0.5)
                                 page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                                 print(f"page_clicker_next_game_silver: {xy_scale}")
-                                time.sleep(1)
+                                time.sleep(2)
                             elif conf.autoNextGame.next_game_Rank == 'copper':
-                                xy_scale = {"x": 11.5 * scale, "y": 3.375 * scale}
+                                xy_scale = {"x": AUTO_GAME['rankStage'][2][0] * scale,
+                                            "y": AUTO_GAME['rankStage'][2][1] * scale}
                                 page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                 time.sleep(0.5)
                                 page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                                 print(f"page_clicker_next_game_copper: {xy_scale}")
-                                time.sleep(1)
+                                time.sleep(2)
                             elif conf.autoNextGame.next_game_Rank == 'jade':
-                                xy_scale = {"x": 11.5 * scale, "y": 6.15 * scale}
+                                xy_scale = {"x": AUTO_GAME['rankStage'][0][0] * scale,
+                                            "y": AUTO_GAME['rankStage'][0][1] * scale}
                                 page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                 time.sleep(0.5)
                                 page.mouse.wheel(0, 100)
@@ -165,14 +202,16 @@ def main():
                                 page.mouse.wheel(0, 100)
                                 page.mouse.wheel(0, 100)
                                 time.sleep(2)
-                                xy_scale = {"x": 11.5 * scale, "y": 5.425 * scale}
+                                xy_scale = {"x": AUTO_GAME['rankStage'][3][0] * scale,
+                                            "y": AUTO_GAME['rankStage'][3][1] * scale}
                                 page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                 time.sleep(0.5)
                                 page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                                 print(f"page_clicker_next_game_jade: {xy_scale}")
-                                time.sleep(1)
+                                time.sleep(2)
                             elif conf.autoNextGame.next_game_Rank == 'king':
-                                xy_scale = {"x": 11.5 * scale, "y": 6.15 * scale}
+                                xy_scale = {"x": AUTO_GAME['rankStage'][0][0] * scale,
+                                            "y": AUTO_GAME['rankStage'][0][1] * scale}
                                 page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                 time.sleep(0.5)
                                 page.mouse.wheel(0, 100)
@@ -180,23 +219,26 @@ def main():
                                 page.mouse.wheel(0, 100)
                                 page.mouse.wheel(0, 100)
                                 time.sleep(2)
-                                xy_scale = {"x": 11.5 * scale, "y": 6.825 * scale}
+                                xy_scale = {"x": AUTO_GAME['rankStage'][4][0] * scale,
+                                            "y": AUTO_GAME['rankStage'][4][1] * scale}
                                 page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                 time.sleep(0.5)
                                 page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                                 print(f"page_clicker_next_game_king: {xy_scale}")
-                                time.sleep(1)
+                                time.sleep(2)
 
                             if conf.autoNextGame.next_game_number == '4p':
                                 if conf.autoNextGame.next_game_rounds == 'south':
-                                    xy_scale = {"x": 11.5 * scale, "y": 4.7625 * scale}
+                                    xy_scale = {"x": AUTO_GAME['rankStage'][0][0] * scale,
+                                                "y": AUTO_GAME['rankStage'][0][1] * scale}
                                     page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                     time.sleep(0.5)
                                     page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                                     print(f"page_clicker_next_game_4p_south: {xy_scale}")
                                     time.sleep(1)
                                 elif conf.autoNextGame.next_game_rounds == 'east':
-                                    xy_scale = {"x": 11.5 * scale, "y": 3.475 * scale}
+                                    xy_scale = {"x": AUTO_GAME['rankStage'][1][0] * scale,
+                                                "y": AUTO_GAME['rankStage'][1][1] * scale}
                                     page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                     time.sleep(0.5)
                                     page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
@@ -204,7 +246,8 @@ def main():
                                     time.sleep(1)
                             elif conf.autoNextGame.next_game_number == '3p':
                                 if conf.autoNextGame.next_game_rounds == 'south':
-                                    xy_scale = {"x": 11.5 * scale, "y": 6.15 * scale}
+                                    xy_scale = {"x": AUTO_GAME['rankStage'][2][0] * scale,
+                                                "y": AUTO_GAME['rankStage'][2][1] * scale}
                                     page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                     time.sleep(0.5)
                                     page.mouse.wheel(0, 100)
@@ -212,14 +255,16 @@ def main():
                                     page.mouse.wheel(0, 100)
                                     page.mouse.wheel(0, 100)
                                     time.sleep(2)
-                                    xy_scale = {"x": 11.5 * scale, "y": 6.5625 * scale}
+                                    xy_scale = {"x": AUTO_GAME['rankStage'][3][0] * scale,
+                                                "y": AUTO_GAME['rankStage'][3][1] * scale}
                                     page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                     time.sleep(0.5)
                                     page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                                     print(f"page_clicker_next_game_3p_south: {xy_scale}")
                                     time.sleep(1)
                                 elif conf.autoNextGame.next_game_rounds == 'east':
-                                    xy_scale = {"x": 11.5 * scale, "y": 6.15 * scale}
+                                    xy_scale = {"x": AUTO_GAME['rankStage'][2][0] * scale,
+                                                "y": AUTO_GAME['rankStage'][2][1] * scale}
                                     page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                     time.sleep(0.5)
                                     page.mouse.wheel(0, 100)
@@ -227,7 +272,8 @@ def main():
                                     page.mouse.wheel(0, 100)
                                     page.mouse.wheel(0, 100)
                                     time.sleep(2)
-                                    xy_scale = {"x": 11.5 * scale, "y": 5.4 * scale}
+                                    xy_scale = {"x": AUTO_GAME['rankStage'][4][0] * scale,
+                                                "y": AUTO_GAME['rankStage'][4][1] * scale}
                                     page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                     time.sleep(0.5)
                                     page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
