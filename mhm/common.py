@@ -105,14 +105,14 @@ def main():
 
                     if conf.autoNextGame.enable_auto_next_game:
                         if parse_msg['method'] == '.lq.NotifyGameEndResult':
-                            time.sleep(30)
+                            time.sleep(20)
                             xy_scale = {"x": 14.75 * scale, "y": 8.3375 * scale}
                             page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
-                            time.sleep(1)
-                            page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                             time.sleep(5)
                             page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                             time.sleep(5)
+                            page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                            time.sleep(10)
                             page.mouse.click(6.825 * scale, 6.8 * scale, delay=100)
                             time.sleep(5)
                             page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
