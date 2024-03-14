@@ -13,6 +13,7 @@ mhm 使用 Proxinject 在雀魂客户端中注入 Socks5 代理
 - [x] 随机星标皮肤
 - [x] 支持[Akagi](https://github.com/shinkuan/Akagi)
 - [x] 自动打牌
+- [x] 自动开下局
 
 ## 用前须知
 
@@ -55,11 +56,11 @@ python -m pip install -r requirements.txt
 python -m playwright install chromium
 ```
 
-使用 Akagi 
+使用 Akagi
 
-> 到 [Discord](https://discord.gg/Z2wjXUK8bN) 下载 Akagi 提供的 bot.zip。 注: 网盘中除v2版本均可用，任选一个下载，确保 bot 目录里面有且只有下面四个档案：bot.py, libriichi.so, model.py, mortal.pth 其中如果你是apple芯片的话，需要自行替换对应架构的 [libriichi.so](https://github.com/shinkuan/Akagi/tree/26ce7465bc5ba53ebf5e0b9d50f5465b1d638f08/mjai/bot/libriichi_builds) 文件。
+> 到 [Discord](https://discord.gg/Z2wjXUK8bN) 下载 Akagi 提供的 bot.zip。 注: 网盘中除 v2 版本均可用，任选一个下载。解压获取 **mortal.pth** 文件，放置到 bot 文件夹中。
 
-![bot目录](bot.png)
+> 注: 3p 的 mortal.pth 及对应的 libriichi3p 文件需捐赠 Akagi 进行获取.
 
 启动 mhm
 
@@ -69,7 +70,7 @@ python -m mhm
 
 安装 mitmproxy 证书
 
-> 首次启动 mhm 成功后，关闭它。 
+> 首次启动 mhm 成功后，关闭它。
 > 然后到用户目录 ~/.mitmproxy 安装证书
 
 ## 配置文件
@@ -85,12 +86,22 @@ python -m mhm
 | 启用伪寻觅   | enable_chest     | true \| false |
 | 随机星标皮肤 | random_star_char | true \| false |
 
-## 有关代理模式
+以下表格解释了 autoNextGame 可用的配置选项：
+
+| 释义           | 键                    | 可用值                                   |
+| -------------- | --------------------- | ---------------------------------------- |
+| 启用自动开下局 | enable_auto_next_game | true \| false                            |
+| 游戏段位场     | next_game_Rank        | copper \| silver \| gold \| jade \| king |
+| 游戏人数       | next_game_number      | 4p \| 3p                                 |
+| 游戏房间       | next_game_rounds      | south \| east                            |
+
+### 有关代理模式
+
 mhm.json 中默认代理模式为 `"mode": ["regular"]`。
 
-使用 steam 雀魂客户端, 修改为: `"mode": ["socks5"]`, `"proxinject": { "name": "jantama_mahjongsoul", "set-proxy": "127.0.0.1:7878"}`, 这里的7878端口是`mitm`监听的端口。
+使用 steam 雀魂客户端, 修改为: `"mode": ["socks5"]`, `"proxinject": { "name": "jantama_mahjongsoul", "set-proxy": "127.0.0.1:7878"}`, 这里的 7878 端口是`mitm`监听的端口。
 
-网页加载慢可尝试使用上游代理，可以更改为 `"mode": ["upstream:http://127.0.0.1:7890/"]`, 示例为clash的7890端口。
+网页加载慢可尝试使用上游代理，可以更改为 `"mode": ["upstream:http://127.0.0.1:7890/"]`, 示例为 clash 的 7890 端口。
 
 ## 特别感谢
 
@@ -101,4 +112,9 @@ mhm.json 中默认代理模式为 `"mode": ["regular"]`。
 - [EndlessCheng](https://github.com/EndlessCheng/mahjong-helper)
 
 ## 更新内容说明
+
 本项目是 [majsoul-hook-mitm](https://github.com/anosora233/majsoul-hook-mitm) 和 [Akagi](https://github.com/shinkuan/Akagi) 的聚合版本。在 **majsoul-hook-mitm** 项目的基础上增加了对 **Akagi** 项目中 mortal 模型的支持与自动打牌功能支持，与 **Akagi** 项目中的不同是无美观好看的终端界面。
+
+## 本项目的问题反馈测试群
+
+[Discord](https://discord.gg/NTXFtuRK)
