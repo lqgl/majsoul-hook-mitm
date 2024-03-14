@@ -21,19 +21,18 @@ AUTO_GAME = {
         (11.5, 2.75),
     ],
     "rankStage": [
-        (11.5, 6.15),
-        (11.5, 4.825),
-        (11.5, 3.375),
-        (11.5, 5.425),
-        (11.5, 6.825),
+        (11.5, 6.15),  # 金之间: gold
+        (11.5, 4.825), # 银之间: silver
+        (11.5, 3.375), # 铜之间: copper
+        (11.5, 5.425), # 玉之间: jade
+        (11.5, 6.825), # 王座之间: king
     ],
     "roomsAndRoundsStage": [
-        (11.5, 4.7625),
-        (11.5, 3.475),
-        (11.5, 6.15),
-        (11.5, 6.5625),
-        (11.5, 5.4),
-
+        (11.5, 4.7625), # 四人南
+        (11.5, 3.475),  # 四人东
+        (11.5, 6.15),   # 移动位置点
+        (11.5, 6.5625), # 三人南
+        (11.5, 5.4),    # 三人东
     ],
 }
 
@@ -73,10 +72,7 @@ def main():
         logger.info(f"[i]version: {resver.version}")
         logger.info(f"[i]characters: {len(resver.emotes)}")
 
-        logger.info(f"[i]enable auto next game: {conf.autoNextGame.enable_auto_next_game}")
-        logger.info(f"[i]next game Rank: {conf.autoNextGame.next_game_Rank}")
-        logger.info(f"[i]next game number: {conf.autoNextGame.next_game_number}")
-        logger.info(f"[i]next game rounds: {conf.autoNextGame.next_game_rounds}")
+        logger.info(f"[i]auto next game: {conf.autoNextGame.enable_auto_next_game} Rank: {conf.autoNextGame.next_game_Rank} Number: {conf.autoNextGame.next_game_number} Rounds: {conf.autoNextGame.next_game_rounds}")
 
         tasks = set()
 
@@ -229,16 +225,16 @@ def main():
 
                             if conf.autoNextGame.next_game_number == '4p':
                                 if conf.autoNextGame.next_game_rounds == 'south':
-                                    xy_scale = {"x": AUTO_GAME['rankStage'][0][0] * scale,
-                                                "y": AUTO_GAME['rankStage'][0][1] * scale}
+                                    xy_scale = {"x": AUTO_GAME['roomsAndRoundsStage'][0][0] * scale,
+                                                "y": AUTO_GAME['roomsAndRoundsStage'][0][1] * scale}
                                     page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                     time.sleep(0.5)
                                     page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                                     print(f"page_clicker_next_game_4p_south: {xy_scale}")
                                     time.sleep(1)
                                 elif conf.autoNextGame.next_game_rounds == 'east':
-                                    xy_scale = {"x": AUTO_GAME['rankStage'][1][0] * scale,
-                                                "y": AUTO_GAME['rankStage'][1][1] * scale}
+                                    xy_scale = {"x": AUTO_GAME['roomsAndRoundsStage'][1][0] * scale,
+                                                "y": AUTO_GAME['roomsAndRoundsStage'][1][1] * scale}
                                     page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                     time.sleep(0.5)
                                     page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
@@ -255,8 +251,8 @@ def main():
                                     page.mouse.wheel(0, 100)
                                     page.mouse.wheel(0, 100)
                                     time.sleep(2)
-                                    xy_scale = {"x": AUTO_GAME['rankStage'][3][0] * scale,
-                                                "y": AUTO_GAME['rankStage'][3][1] * scale}
+                                    xy_scale = {"x": AUTO_GAME['roomsAndRoundsStage'][3][0] * scale,
+                                                "y": AUTO_GAME['roomsAndRoundsStage'][3][1] * scale}
                                     page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                     time.sleep(0.5)
                                     page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
@@ -272,8 +268,8 @@ def main():
                                     page.mouse.wheel(0, 100)
                                     page.mouse.wheel(0, 100)
                                     time.sleep(2)
-                                    xy_scale = {"x": AUTO_GAME['rankStage'][4][0] * scale,
-                                                "y": AUTO_GAME['rankStage'][4][1] * scale}
+                                    xy_scale = {"x": AUTO_GAME['roomsAndRoundsStage'][4][0] * scale,
+                                                "y": AUTO_GAME['roomsAndRoundsStage'][4][1] * scale}
                                     page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                                     time.sleep(0.5)
                                     page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
