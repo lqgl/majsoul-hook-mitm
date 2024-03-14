@@ -16,9 +16,9 @@ PROXINJECTOR = pRoot / "common/proxinject/proxinjector-cli"
 
 AUTO_GAME = {
     "endGameStage": [
-        (14.75, 8.3375),
-        (6.825, 6.8),
-        (11.5, 2.75),
+        (14.75, 8.3375),    # 点击确定按钮
+        (6.825, 6.8),       # 点击好感度礼物
+        (11.5, 2.75),       # 点击段位场
     ],
     "rankStage": [
         (11.5, 6.15),  # 金之间: gold
