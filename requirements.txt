@@ -2,6 +2,7 @@
 mitmproxy==10.1.6
 numpy==1.26.3
 loguru==0.7.2
+textual==0.46.0
 playwright==1.41.0
 requests ==2.31.0
 rich==13.7.0
