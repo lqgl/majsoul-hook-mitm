@@ -124,7 +124,7 @@ def main():
 
                     if conf.autoNextGame.enable_auto_next_game:
                         if parse_msg['method'] == '.lq.NotifyGameEndResult':
-                            time.sleep(20)
+                            time.sleep(30)
                             xy_scale = {"x": AUTO_GAME['endGameStage'][0][0] * scale,
                                         "y": AUTO_GAME['endGameStage'][0][1] * scale}
                             page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
