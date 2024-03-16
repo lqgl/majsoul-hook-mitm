@@ -313,6 +313,28 @@ class Akagi(App):
         self.akagi_action.label = "Akagi"
         self.update_msgs = self.set_interval(0.10, self.get_messages)
 
+    def update_containers(self):
+        # log
+        self.gm_msg_list = []
+        self.mjai_msg_list = []
+        self.game_log.update(self.gm_msg_list)
+        self.mjai_log.update(self.mjai_msg_list)
+        # tehai
+        for idx, tehai_label in enumerate(self.tehai_labels):
+            tehai_label.update(TILE_2_UNICODE_ART_RICH["?"])
+        for idx, tehai_value_label in enumerate(self.tehai_value_labels):
+            tehai_value_label.update(HAI_VALUE[40])
+        self.tsumohai_label.update(TILE_2_UNICODE_ART_RICH["?"])
+        self.tsumohai_value_label.update(HAI_VALUE[40])
+        # akagi
+        self.akagi_action.label = "Akagi"
+        for akagi_action_class in self.akagi_action.classes:
+            self.akagi_action.remove_class(akagi_action_class)
+        self.akagi_pai.label = "None"
+        for akagi_pai_class in self.akagi_pai.classes:
+            self.akagi_pai.remove_class(akagi_pai_class)
+        self.pai_unicode_art.update(TILE_2_UNICODE_ART_RICH["?"])
+
     def get_messages(self):
         gm_msgs = get_messages()
         if len(gm_msgs) > 0:
@@ -332,31 +354,16 @@ class Akagi(App):
                 if gm_msg.data.get('name') == 'ActionNewRound':
                     self.action.isNewRound = True
                     self.action.reached = False
+            # 游戏结束
             if parse_msg['method'] == '.lq.NotifyGameEndResult' or parse_msg['method'] == '.lq.NotifyGameTerminate':
                 global game_end_msgs
                 game_end_msgs.append(parse_msg)
-                # log
-                self.gm_msg_list = []
-                self.mjai_msg_list = []
-                self.game_log.update(self.gm_msg_list)
-                self.mjai_log.update(self.mjai_msg_list)
-                # tehai
-                for idx, tehai_label in enumerate(self.tehai_labels):
-                    tehai_label.update(TILE_2_UNICODE_ART_RICH["?"])
-                for idx, tehai_value_label in enumerate(self.tehai_value_labels):
-                    tehai_value_label.update(HAI_VALUE[40])
-                self.tsumohai_label.update(TILE_2_UNICODE_ART_RICH["?"])
-                self.tsumohai_value_label.update(HAI_VALUE[40])
-                # akagi
-                self.akagi_action.label = "Akagi"
-                for akagi_action_class in self.akagi_action.classes:
-                    self.akagi_action.remove_class(akagi_action_class)
-                self.akagi_pai.label = "None"
-                for akagi_pai_class in self.akagi_pai.classes:
-                    self.akagi_pai.remove_class(akagi_pai_class)
-                self.pai_unicode_art.update(TILE_2_UNICODE_ART_RICH["?"])
+                self.update_containers()
 
-
+            # 对局结束
+            if parse_msg['data'].get('name') == 'ActionHule' or parse_msg['data'].get('name') == 'ActionNoTile' or parse_msg['data'].get('name') == 'ActionLiuJu':
+                self.update_containers()
+                
             # process game message.
             mjai_msg = self.bridge.input(parse_msg)
             if mjai_msg is not None:
@@ -530,17 +537,11 @@ def main():
         proxy_thread.start()
         # wait for mitmproxy start
         time.sleep(1)
-        # init config value
-        if conf.AutoNextGame.enable_auto_next_game:
-            global AUTO_NEXT_GAME
-            AUTO_NEXT_GAME = True
 
         if conf.playwright["enable"]:
             global ENABLE_PLAYWRIGHT, AUTOPLAY
             ENABLE_PLAYWRIGHT = True
             AUTOPLAY = True
-        else:
-            AUTO_NEXT_GAME = False
         
         # start playweight thread
         if ENABLE_PLAYWRIGHT:
