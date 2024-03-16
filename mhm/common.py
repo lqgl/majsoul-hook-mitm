@@ -540,7 +540,6 @@ def main():
             ENABLE_PLAYWRIGHT = True
             AUTOPLAY = True
         else:
-            global AUTO_NEXT_GAME
             AUTO_NEXT_GAME = False
         
         # start playweight thread
