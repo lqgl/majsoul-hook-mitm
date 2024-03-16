@@ -28,9 +28,9 @@ AUTO_NEXT_GAME = False
 
 AUTO_GAME = {
     "endGameStage": [
-        (14.75, 8.3375),
-        (6.825, 6.8),
-        (11.5, 2.75),
+        (14.75, 8.3375),    # 点击确定按钮
+        (6.825, 6.8),       # 点击好感度礼物
+        (11.5, 2.75),       # 点击段位场
     ],
     "rankStage": [
         (11.5, 6.15),  # 金之间: gold
@@ -107,7 +107,7 @@ def start_playwright():
             parse_msg = game_end_msgs.pop(0)
             if AUTO_NEXT_GAME:
                 if parse_msg['method'] == '.lq.NotifyGameEndResult':
-                    time.sleep(20)
+                    time.sleep(30)
                     xy_scale = {"x": AUTO_GAME['endGameStage'][0][0] * scale,
                                 "y": AUTO_GAME['endGameStage'][0][1] * scale}
                     page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
@@ -326,12 +326,12 @@ class Akagi(App):
             if gm_msg.method == '.lq.ActionPrototype':
                 if 'operation' in gm_msg.data.get('data'):
                     if 'operation_list' in gm_msg.data.get('data').get('operation'):
-                        self.action.latest_operation_list = gm_msg.data.get('data').get('operation').get('operation_list') 
+                        self.action.latest_operation_list = gm_msg.data.get('data').get('operation').get('operation_list')
                 if gm_msg.data.get('name') == 'ActionDiscardTile':
                     self.action.isNewRound = False
                 if gm_msg.data.get('name') == 'ActionNewRound':
                     self.action.isNewRound = True
-                    self.action.reached = False  
+                    self.action.reached = False
             if parse_msg['method'] == '.lq.NotifyGameEndResult' or parse_msg['method'] == '.lq.NotifyGameTerminate':
                 global game_end_msgs
                 game_end_msgs.append(parse_msg)
@@ -347,7 +347,7 @@ class Akagi(App):
                     tehai_value_label.update(HAI_VALUE[40])
                 self.tsumohai_label.update(TILE_2_UNICODE_ART_RICH["?"])
                 self.tsumohai_value_label.update(HAI_VALUE[40])
-                # akagi 
+                # akagi
                 self.akagi_action.label = "Akagi"
                 for akagi_action_class in self.akagi_action.classes:
                     self.akagi_action.remove_class(akagi_action_class)
@@ -355,8 +355,8 @@ class Akagi(App):
                 for akagi_pai_class in self.akagi_pai.classes:
                     self.akagi_pai.remove_class(akagi_pai_class)
                 self.pai_unicode_art.update(TILE_2_UNICODE_ART_RICH["?"])
-                
-            
+
+
             # process game message.
             mjai_msg = self.bridge.input(parse_msg)
             if mjai_msg is not None:
@@ -437,7 +437,7 @@ class Akagi(App):
                 self.mjai_msg_list = []
         else:
             time.sleep(1)
-                       
+
 
     def compose(self) -> ComposeResult:
         """Called to add widgets to the app."""
@@ -534,7 +534,7 @@ def main():
         if conf.AutoNextGame.enable_auto_next_game:
             global AUTO_NEXT_GAME
             AUTO_NEXT_GAME = True
-        
+
         if conf.playwright["enable"]:
             global ENABLE_PLAYWRIGHT, AUTOPLAY
             ENABLE_PLAYWRIGHT = True
