@@ -521,7 +521,7 @@ def main():
     # 日志设定
     logger.remove(handler_id=None)
     logger.add("akagi.log", level = "DEBUG")
-    # 初始化配置
+    # 初始化资源配置
     init()
     try:
         # Create and start the proxy server thread
@@ -539,10 +539,16 @@ def main():
             global ENABLE_PLAYWRIGHT, AUTOPLAY
             ENABLE_PLAYWRIGHT = True
             AUTOPLAY = True
+        else:
+            global AUTO_NEXT_GAME
+            AUTO_NEXT_GAME = False
+        
         # start playweight thread
-        playwright_thread = threading.Thread(target=start_playwright)
-        playwright_thread.daemon = True
-        playwright_thread.start()
+        if ENABLE_PLAYWRIGHT:
+            playwright_thread = threading.Thread(target=start_playwright)
+            playwright_thread.daemon = True
+            playwright_thread.start()
+
         # start texual terminal
         app = Akagi()
         app.run()
