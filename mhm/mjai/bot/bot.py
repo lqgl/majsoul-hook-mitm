@@ -2,8 +2,7 @@ import json
 import sys
 import hashlib
 import pathlib
-
-from loguru import logger
+import requests
 
 from . import model
 
@@ -15,6 +14,23 @@ class Bot:
         self.model = model.load_model(player_id)
         with open(model_path, "rb") as f:
             self.model_hash = hashlib.sha256(f.read()).hexdigest()
+        try:
+            with open(pathlib.Path(__file__).parent / "online.json", "r") as f:
+                online_json = json.load(f)
+                self.online = online_json["online"]
+                if not self.online:
+                    return
+                api_key = online_json["api_key"]
+                server = online_json["server"]
+                headers = {
+                    'Authorization': api_key,
+                }
+                r = requests.post(f"{server}/check", headers=headers)
+                r_json = r.json()
+                if r_json["result"] == "success":
+                    self.model_hash = "online"
+        except Exception as e:
+            self.online = False
 
     def react(self, events: str) -> str:
         events = json.loads(events)
@@ -27,6 +43,8 @@ class Bot:
             return json.dumps({"type":"none"}, separators=(",", ":"))
         else:
             raw_data = json.loads(return_action)
+            if self.online:
+                raw_data["online"] = model.online_valid
             return json.dumps(raw_data, separators=(",", ":"))
 
     def state(self):
