@@ -56,6 +56,7 @@ service Lobby {
 	rpc completePeriodActivityTaskBatch (ReqCompletePeriodActivityTaskBatch) returns (ResCommon);
 	rpc completeRandomActivityTask (ReqCompleteActivityTask) returns (ResCommon);
 	rpc completeSegmentTaskReward (ReqCompleteSegmentTaskReward) returns (ResCompleteSegmentTaskReward);
+	rpc completeVillageTask (ReqCompleteVillageTask) returns (ResCompleteVillageTask);
 	rpc composeShard (ReqComposeShard) returns (ResCommon);
 	rpc createAlipayAppOrder (ReqCreateAlipayAppOrder) returns (ResCreateAlipayAppOrder);
 	rpc createAlipayOrder (ReqCreateAlipayOrder) returns (ResCreateAlipayOrder);
@@ -205,6 +206,7 @@ service Lobby {
 	rpc gainVipReward (ReqGainVipReward) returns (ResCommon);
 	rpc gameMasterCommand (ReqGMCommand) returns (ResCommon);
 	rpc generateCombiningCraft (ReqGenerateCombiningCraft) returns (ResGenerateCombiningCraft);
+	rpc getFriendVillageData (ReqGetFriendVillageData) returns (ResGetFriendVillageData);
 	rpc goNextShiLian (ReqCommon) returns (ResCommon);
 	rpc handleFriendApply (ReqHandleFriendApply) returns (ResCommon);
 	rpc heatbeat (ReqHeatBeat) returns (ResCommon);
@@ -229,6 +231,7 @@ service Lobby {
 	rpc modifyRoom (ReqModifyRoom) returns (ResCommon);
 	rpc modifySignature (ReqModifySignature) returns (ResCommon);
 	rpc moveCombiningCraft (ReqMoveCombiningCraft) returns (ResMoveCombiningCraft);
+	rpc nextRoundVillage (ReqNextRoundVillage) returns (ResNextRoundVillage);
 	rpc oauth2Auth (ReqOauth2Auth) returns (ResOauth2Auth);
 	rpc oauth2Check (ReqOauth2Check) returns (ResOauth2Check);
 	rpc oauth2Login (ReqOauth2Login) returns (ResLogin);
@@ -262,6 +265,8 @@ service Lobby {
 	rpc receiveRPGRewards (ReqReceiveRPGRewards) returns (ResReceiveRPGRewards);
 	rpc receiveUpgradeActivityReward (ReqReceiveUpgradeActivityReward) returns (ResReceiveUpgradeActivityReward);
 	rpc receiveVersionReward (ReqCommon) returns (ResCommon);
+	rpc receiveVillageBuildingReward (ReqReceiveVillageBuildingReward) returns (ResReceiveVillageBuildingReward);
+	rpc receiveVillageTripReward (ReqReceiveVillageTripReward) returns (ResReceiveVillageTripReward);
 	rpc recoverCombiningRecycle (ReqRecoverCombiningRecycle) returns (ResRecoverCombiningRecycle);
 	rpc refreshChallenge (ReqCommon) returns (ResRefreshChallenge);
 	rpc refreshDailyTask (ReqRefreshDailyTask) returns (ResRefreshDailyTask);
@@ -284,6 +289,7 @@ service Lobby {
 	rpc sendGiftToCharacter (ReqSendGiftToCharacter) returns (ResSendGiftToCharacter);
 	rpc setHiddenCharacter (ReqSetHiddenCharacter) returns (ResSetHiddenCharacter);
 	rpc setLoadingImage (ReqSetLoadingImage) returns (ResCommon);
+	rpc setVillageWorker (ReqSetVillageWorker) returns (ResSetVillageWorker);
 	rpc shopPurchase (ReqShopPurchase) returns (ResShopPurchase);
 	rpc signup (ReqSignupAccount) returns (ResSignupAccount);
 	rpc simulationActivityTrain (ReqSimulationActivityTrain) returns (ResSimulationActivityTrain);
@@ -293,6 +299,7 @@ service Lobby {
 	rpc startRoom (ReqRoomStart) returns (ResCommon);
 	rpc startSimulationActivityGame (ReqStartSimulationActivityGame) returns (ResStartSimulationActivityGame);
 	rpc startUnifiedMatch (ReqStartUnifiedMatch) returns (ResCommon);
+	rpc startVillageTrip (ReqStartVillageTrip) returns (ResCommon);
 	rpc stopCustomizedContest (ReqCommon) returns (ResCommon);
 	rpc takeAttachmentFromMail (ReqTakeAttachment) returns (ResCommon);
 	rpc taskRequest (ReqTaskRequest) returns (ResCommon);
@@ -310,6 +317,7 @@ service Lobby {
 	rpc upgradeActivityLevel (ReqUpgradeActivityLevel) returns (ResUpgradeActivityLevel);
 	rpc upgradeChallenge (ReqCommon) returns (ResUpgradeChallenge);
 	rpc upgradeCharacter (ReqUpgradeCharacter) returns (ResUpgradeCharacter);
+	rpc upgradeVillageBuilding (ReqUpgradeVillageBuilding) returns (ResCommon);
 	rpc useBagItem (ReqUseBagItem) returns (ResCommon);
 	rpc useCommonView (ReqUseCommonView) returns (ResCommon);
 	rpc useGiftCode (ReqUseGiftCode) returns (ResUseGiftCode);
@@ -414,15 +422,16 @@ message AccountActiveState {
 }
 
 message AccountActivityUpdate {
-	repeated lq.MineActivityData mine_data = 1;
-	repeated lq.RPGActivity rpg_data = 2;
+	repeated MineActivityData mine_data = 1;
+	repeated RPGActivity rpg_data = 2;
 	repeated ActivityFeedData feed_data = 3;
-	repeated lq.ActivitySpotData spot_data = 4;
-	repeated lq.ActivityFriendGiftData friend_gift_data = 5;
-	repeated lq.ActivityUpgradeData upgrade_data = 6;
-	repeated lq.ActivityGachaUpdateData gacha_data = 7;
-	repeated lq.ActivitySimulationData simulation_data = 8;
+	repeated ActivitySpotData spot_data = 4;
+	repeated ActivityFriendGiftData friend_gift_data = 5;
+	repeated ActivityUpgradeData upgrade_data = 6;
+	repeated ActivityGachaUpdateData gacha_data = 7;
+	repeated ActivitySimulationData simulation_data = 8;
 	repeated ActivityCombiningLQData combining_data = 9;
+	repeated ActivityVillageData village_data = 10;
 }
 
 message AccountCacheView {
@@ -720,7 +729,7 @@ message AccountUpdate {
 	TaskUpdate activity_random_task = 12;
 	AccountChallengeUpdate challenge = 13;
 	AccountABMatchUpdate ab_match = 14;
-	lq.AccountActivityUpdate activity = 15;
+	AccountActivityUpdate activity = 15;
 	SegmentTaskUpdate activity_segment_task = 16;
 	message AccountABMatchUpdate {
 		uint32 match_id = 1;
@@ -763,7 +772,7 @@ message AccountUpdate {
 		uint32 final = 3;
 	}
 	message SegmentTaskUpdate {
-		repeated lq.SegmentTaskProgress progresses = 1;
+		repeated SegmentTaskProgress progresses = 1;
 		repeated uint32 task_list = 2;
 	}
 	message TaskUpdate {
@@ -967,6 +976,7 @@ message ActionNewRound {
 	uint32 field_spell = 18;
 	string sha256 = 19;
 	YongchangInfo yongchang = 20;
+	string saltSha256 = 21;
 }
 
 message ActionNoTile {
@@ -1207,6 +1217,14 @@ message ActivityUpgradeData {
 		uint32 group_id = 1;
 		uint32 level = 2;
 	}
+}
+
+message ActivityVillageData {
+	uint32 activity_id = 1;
+	repeated VillageBuildingData buildings = 2;
+	repeated VillageTripData trip = 3;
+	repeated VillageTaskData tasks = 6;
+	uint32 round = 7;
 }
 
 message Announcement {
@@ -2091,7 +2109,7 @@ message NotifyActivityRewardV2 {
 }
 
 message NotifyActivitySegmentTaskUpdate {
-	repeated lq.SegmentTaskProgress progresses = 1;
+	repeated SegmentTaskProgress progresses = 1;
 }
 
 message NotifyActivityTaskUpdate {
@@ -2284,6 +2302,9 @@ message NotifyGameTerminate {
 message NotifyGiftSendRefresh {
 }
 
+message NotifyIntervalUpdate {
+}
+
 message NotifyLeaderboardPoint {
 	repeated LeaderboardPoint leaderboard_points = 1;
 	message LeaderboardPoint {
@@ -2403,7 +2424,7 @@ message NotifyRoomPlayerUpdate {
 	repeated PlayerBaseView update_list = 1;
 	repeated uint32 remove_list = 2;
 	uint32 owner_id = 3;
-	optional uint32 robot_count = 4;
+	uint32 robot_count = 4;
 	repeated PlayerBaseView player_list = 5;
 	uint32 seq = 6;
 }
@@ -2811,6 +2832,8 @@ message RecordNewRound {
 	uint32 field_spell = 21;
 	string sha256 = 22;
 	YongchangInfo yongchang = 23;
+	string saltSha256 = 24;
+	string salt = 25;
 	message TingPai {
 		uint32 seat = 1;
 		repeated TingPaiInfo tingpais1 = 2;
@@ -3091,6 +3114,11 @@ message ReqCompletePeriodActivityTaskBatch {
 message ReqCompleteSegmentTaskReward {
 	uint32 task_id = 1;
 	uint32 count = 2;
+}
+
+message ReqCompleteVillageTask {
+	uint32 task_id = 1;
+	uint32 activity_id = 2;
 }
 
 message ReqComposeShard {
@@ -3634,6 +3662,11 @@ message ReqGenerateCombiningCraft {
 	uint32 bin_id = 2;
 }
 
+message ReqGetFriendVillageData {
+	repeated uint32 account_list = 1;
+	uint32 activity_id = 2;
+}
+
 message ReqHandleFriendApply {
 	uint32 target_id = 1;
 	uint32 method = 2;
@@ -3733,6 +3766,10 @@ message ReqMultiAccountId {
 message ReqMutiChallengeLevel {
 	repeated uint32 account_id_list = 1;
 	uint32 season = 2;
+}
+
+message ReqNextRoundVillage {
+	uint32 activity_id = 1;
 }
 
 message ReqOauth2Auth {
@@ -3874,6 +3911,18 @@ message ReqReceiveUpgradeActivityReward {
 	uint32 activity_id = 1;
 }
 
+message ReqReceiveVillageBuildingReward {
+	uint32 activity_id = 1;
+	uint32 building_id = 2;
+	repeated RewardSlot rewards = 3;
+}
+
+message ReqReceiveVillageTripReward {
+	uint32 activity_id = 1;
+	uint32 dest_id = 2;
+	repeated RewardSlot rewards = 3;
+}
+
 message ReqRecoverCombiningRecycle {
 	uint32 activity_id = 1;
 }
@@ -4012,6 +4061,12 @@ message ReqSetLoadingImage {
 	repeated uint32 images = 1;
 }
 
+message ReqSetVillageWorker {
+	uint32 building_id = 1;
+	uint32 worker_pos = 2;
+	uint32 activity_id = 3;
+}
+
 message ReqShopPurchase {
 	string type = 1;
 	uint32 id = 2;
@@ -4056,6 +4111,11 @@ message ReqStartSimulationActivityGame {
 message ReqStartUnifiedMatch {
 	string match_sid = 1;
 	string client_version_string = 2;
+}
+
+message ReqStartVillageTrip {
+	uint32 dest = 1;
+	uint32 activity_id = 2;
 }
 
 message ReqSyncGame {
@@ -4130,6 +4190,11 @@ message ReqUpgradeCharacter {
 	uint32 character_id = 1;
 }
 
+message ReqUpgradeVillageBuilding {
+	uint32 building_id = 1;
+	uint32 activity_id = 2;
+}
+
 message ReqUseBagItem {
 	uint32 item_id = 1;
 }
@@ -4195,18 +4260,19 @@ message ResAccountActivityData {
 	repeated TaskProgress random_task_progress_list = 10;
 	repeated ChestUpData chest_up_data = 11;
 	ActivitySNSData sns_data = 12;
-	repeated lq.MineActivityData mine_data = 13;
-	repeated lq.RPGActivity rpg_data = 14;
-	repeated lq.ActivityArenaData arena_data = 15;
-	repeated lq.FeedActivityData feed_data = 16;
-	repeated lq.SegmentTaskProgress segment_task_progress_list = 17;
-	repeated lq.VoteData vote_records = 18;
-	repeated lq.ActivitySpotData spot_data = 19;
-	repeated lq.ActivityFriendGiftData friend_gift_data = 20;
-	repeated lq.ActivityUpgradeData upgrade_data = 21;
-	repeated lq.ActivityGachaUpdateData gacha_data = 22;
-	repeated lq.ActivitySimulationData simulation_data = 23;
-	repeated lq.ActivityCombiningLQData combining_data = 24;
+	repeated MineActivityData mine_data = 13;
+	repeated RPGActivity rpg_data = 14;
+	repeated ActivityArenaData arena_data = 15;
+	repeated FeedActivityData feed_data = 16;
+	repeated SegmentTaskProgress segment_task_progress_list = 17;
+	repeated VoteData vote_records = 18;
+	repeated ActivitySpotData spot_data = 19;
+	repeated ActivityFriendGiftData friend_gift_data = 20;
+	repeated ActivityUpgradeData upgrade_data = 21;
+	repeated ActivityGachaUpdateData gacha_data = 22;
+	repeated ActivitySimulationData simulation_data = 23;
+	repeated ActivityCombiningLQData combining_data = 24;
+	repeated ActivityVillageData village_data = 25;
 	message ActivityRichmanData {
 		uint32 activity_id = 1;
 		uint32 location = 2;
@@ -4287,7 +4353,7 @@ message ResAchievement {
 
 message ResActivityBuff {
 	Error error = 1;
-	repeated lq.ActivityBuffData buff_list = 2;
+	repeated ActivityBuffData buff_list = 2;
 }
 
 message ResActivityList {
@@ -4437,6 +4503,11 @@ message ResCommonViews {
 message ResCompleteSegmentTaskReward {
 	Error error = 1;
 	repeated ExecuteReward rewards = 2;
+}
+
+message ResCompleteVillageTask {
+	Error error = 1;
+	repeated ExecuteReward reward_items = 2;
 }
 
 message ResConnectionInfo {
@@ -4667,7 +4738,7 @@ message ResDeleteAccount {
 message ResDigMine {
 	Error error = 1;
 	repeated MineReward map = 2;
-	repeated lq.RewardSlot reward = 3;
+	repeated RewardSlot reward = 3;
 }
 
 message ResDoActivitySignIn {
@@ -4893,8 +4964,8 @@ message ResFetchQueueInfo {
 message ResFetchRPGBattleHistory {
 	Error error = 1;
 	repeated BattleResult battle_result = 2;
-	lq.RPGState start_state = 3;
-	lq.RPGState current_state = 4;
+	RPGState start_state = 3;
+	RPGState current_state = 4;
 	message BattleResult {
 		uint32 chang = 1;
 		uint32 ju = 2;
@@ -4918,8 +4989,8 @@ message ResFetchRPGBattleHistory {
 message ResFetchRPGBattleHistoryV2 {
 	Error error = 1;
 	repeated BattleResultV2 battle_result = 2;
-	lq.RPGState start_state = 3;
-	lq.RPGState current_state = 4;
+	RPGState start_state = 3;
+	RPGState current_state = 4;
 	repeated BattleResultV2 recent_battle_result = 5;
 	message BattleResultV2 {
 		uint32 chang = 1;
@@ -4928,7 +4999,7 @@ message ResFetchRPGBattleHistoryV2 {
 		uint32 damage = 5;
 		uint32 monster_seq = 7;
 		uint32 killed = 9;
-		repeated lq.ActivityBuffData buff = 10;
+		repeated ActivityBuffData buff = 10;
 		uint32 points = 11;
 		string uuid = 14;
 	}
@@ -5085,6 +5156,15 @@ message ResGenerateCombiningCraft {
 	uint32 craft_id = 3;
 }
 
+message ResGetFriendVillageData {
+	Error error = 1;
+	repeated FriendVillageData list = 2;
+	message FriendVillageData {
+		uint32 account_id = 1;
+		uint32 level = 2;
+	}
+}
+
 message ResIDCardInfo {
 	Error error = 1;
 	bool is_authed = 2;
@@ -5183,6 +5263,11 @@ message ResMutiChallengeLevel {
 		uint32 account_id = 1;
 		uint32 level = 2;
 	}
+}
+
+message ResNextRoundVillage {
+	Error error = 1;
+	ActivityVillageData activity_data = 2;
 }
 
 message ResOauth2Auth {
@@ -5318,6 +5403,16 @@ message ResReceiveUpgradeActivityReward {
 	repeated ExecuteReward rewards = 2;
 }
 
+message ResReceiveVillageBuildingReward {
+	Error error = 1;
+	repeated ExecuteReward reward_items = 2;
+}
+
+message ResReceiveVillageTripReward {
+	Error error = 1;
+	repeated ExecuteReward reward_items = 2;
+}
+
 message ResRecoverCombiningRecycle {
 	Error error = 1;
 	uint32 craft_id = 2;
@@ -5444,6 +5539,12 @@ message ResSetHiddenCharacter {
 	repeated uint32 hidden_characters = 2;
 }
 
+message ResSetVillageWorker {
+	Error error = 1;
+	VillageBuildingData building = 2;
+	uint32 update_time = 3;
+}
+
 message ResShopInfo {
 	Error error = 1;
 	ShopInfo shop_info = 2;
@@ -5471,7 +5572,7 @@ message ResStartObserve {
 
 message ResStartSimulationActivityGame {
 	Error error = 1;
-	repeated lq.ActivitySimulationGameRecord records = 2;
+	repeated ActivitySimulationGameRecord records = 2;
 }
 
 message ResSyncGame {
@@ -5644,6 +5745,38 @@ message ViewSlot {
 	uint32 item_id = 2;
 	uint32 type = 3;
 	repeated uint32 item_id_list = 4;
+}
+
+message VillageBuildingData {
+	uint32 id = 1;
+	repeated VillageReward reward = 3;
+	repeated uint32 workers = 4;
+}
+
+message VillageReward {
+	uint32 id = 1;
+	uint32 count = 2;
+}
+
+message VillageTargetInfo {
+	string nickname = 1;
+	uint32 avatar = 2;
+	uint32 avatar_frame = 3;
+	uint32 title = 4;
+	uint32 verified = 5;
+}
+
+message VillageTaskData {
+	uint32 id = 1;
+	uint32 completed_count = 2;
+}
+
+message VillageTripData {
+	uint32 start_round = 1;
+	uint32 dest_id = 2;
+	repeated VillageReward reward = 3;
+	uint32 level = 4;
+	VillageTargetInfo info = 5;
 }
 
 message VoteData {
