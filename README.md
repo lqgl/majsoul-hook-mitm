@@ -38,7 +38,7 @@ mhm 使用 Proxinject 在雀魂客户端中注入 Socks5 代理
 同步仓库
 
 ```bash
-git clone https://github.com/lqgl/majsoul-hook-mitm && cd majsoul-hook-mitm
+git clone https://github.com/lqgl/majsoul-hook-mitm.git && cd majsoul-hook-mitm
 
 ```
 
@@ -115,6 +115,8 @@ mhm.json 中默认代理模式为 `"mode": ["regular"]`。
 
 本项目是 [majsoul-hook-mitm](https://github.com/anosora233/majsoul-hook-mitm) 和 [Akagi](https://github.com/shinkuan/Akagi) 的聚合版本。在 **majsoul-hook-mitm** 项目的基础上增加了对 **Akagi** 项目中 mortal 模型的支持与自动打牌功能支持，与 **Akagi** 项目中的不同是无美观好看的终端界面。
 
-## 本项目的问题反馈测试群
+## Discord 交流群
 
-[Discord](https://discord.gg/NTXFtuRK)
+- [majsoul-hook-mitm](https://discord.gg/NTXFtuRK)
+
+- [Akagi](https://discord.gg/Z2wjXUK8bN)
