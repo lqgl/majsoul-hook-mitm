@@ -290,6 +290,7 @@ class Akagi(App):
         self.latest_operation_list = None
         self.gm_msg_list = []
         self.mjai_msg_list = []
+        self.isLiqi = False
 
     def on_mount(self) -> None:
         self.game_log = self.query_one("#game_log")
@@ -351,6 +352,8 @@ class Akagi(App):
                         self.action.latest_operation_list = gm_msg.data.get('data').get('operation').get('operation_list')
                 if gm_msg.data.get('name') == 'ActionDiscardTile':
                     self.action.isNewRound = False
+                    if gm_msg.data.get('data').get('isLiqi'):
+                        self.isLiqi = True
                 if gm_msg.data.get('name') == 'ActionNewRound':
                     self.action.isNewRound = True
                     self.action.reached = False
@@ -431,17 +434,19 @@ class Akagi(App):
 
                 # 自动打牌
                 if AUTOPLAY:
-                    self.action.mjai2action(self.mjai_msg_list[-1], self.tehai, self.tsumohai)
+                    self.action.mjai2action(self.mjai_msg_list[-1], self.tehai, self.tsumohai, self.isLiqi)
                     # 执行后就清空
                     self.gm_msg_list = []
                     self.mjai_msg_list = []
+                    self.isLiqi = False
         # 处理恢复自动打牌的场景
         elif len(self.mjai_msg_list) > 0:
             if AUTOPLAY:
-                self.action.mjai2action(self.mjai_msg_list[-1], self.tehai, self.tsumohai)
+                self.action.mjai2action(self.mjai_msg_list[-1], self.tehai, self.tsumohai, self.isLiqi)
                 # 执行后就扔掉
                 self.gm_msg_list = []
                 self.mjai_msg_list = []
+                self.isLiqi = False
         else:
             time.sleep(1)
 

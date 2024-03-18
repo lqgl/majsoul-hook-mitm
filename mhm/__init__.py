@@ -67,7 +67,7 @@ class Conf:
             dump={"with_dumper": False, "with_termlog": True},
             mitmdump={"http2": False, "listen_host": "127.0.0.1", "listen_port": 7878, "mode": ["regular"]},
             proxinject=None,
-            playwright={"enable": True, "width": 1280, "height": 720},
+            playwright={"enable": True, "width": 1280, "height": 720, "moqiedelay": False},
             autoNextGame=cls.AutoNextGame()
         )
 

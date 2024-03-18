@@ -4,9 +4,16 @@ from mhm.convert import MS_TILE_2_MJAI_TILE
 from functools import cmp_to_key
 from mhm.majsoul2mjai import compare_pai
 from loguru import logger
+from . import conf
 
 click_list = []
 do_autohu = False
+
+# optimize dahai delay
+YAOJIU = ('1p','1m','1s','9p','9m','9s','E','S','W','N','P','F','C')
+TWOEIGHT = ('2p','2m','2s','8p','8m','8s')
+TFFSS = ('3p','3m','3s','4p','4m','4s','5p','5m','5s','6p','6m','6s','7p','7m','7s')
+REDFIVE = ('5pr','5mr','5sr')
 
 # Coordinates here is on the resolution of 16x9
 LOCATION = {
@@ -110,6 +117,7 @@ class Action:
         self.isNewRound = True
         self.reached = False
         self.latest_operation_list = []
+        self.moqiedelay = conf.playwright["moqiedelay"]
         pass
 
     def page_clicker(self, coord: tuple[float, float]):
@@ -289,7 +297,7 @@ class Action:
                 break
         
 
-    def mjai2action(self, mjai_msg: dict | None, tehai: list[str], tsumohai: str | None):
+    def mjai2action(self, mjai_msg: dict | None, tehai: list[str], tsumohai: str | None, isliqi: bool):
         # print(f"mjai2action: mjai_msg:{mjai_msg} tehai:{tehai} tsomohai:{tsumohai}")
         # 将字符串解析为字典
         dahai_delay = self.decide_random_time()     
@@ -297,13 +305,33 @@ class Action:
             return
         mtype = mjai_msg['type']
         if mtype == 'dahai' and not self.reached:
+            if not self.isNewRound and self.moqiedelay:
+                if isliqi:
+                    # if someone reached
+                    dahai_delay = 4.75
+                elif not mjai_msg['tsumogiri']:
+                    if mjai_msg['pai'] in YAOJIU:
+                        dahai_delay = dahai_delay
+                    elif mjai_msg['pai'] in TWOEIGHT:
+                        dahai_delay = 2.25
+                    elif mjai_msg['pai'] in TFFSS:
+                        dahai_delay = 2.75
+                    elif mjai_msg['pai'] in REDFIVE:
+                        dahai_delay = 3.25
+                else:
+                    # tsumogiri
+                    dahai_delay = dahai_delay
+                logger.info(f"dahai_delay:{dahai_delay}")
             time.sleep(dahai_delay)
             self.click_dahai(mjai_msg, tehai, tsumohai)
             return
         # 这里是mjai的events
         # https://mjai.app/docs/mjai-protocol#:~:text=Flowchart-,Events,-Start%20Game
         if mtype in ['none', 'chi', 'pon', 'daiminkan', 'ankan', 'kakan', 'hora', 'reach', 'ryukyoku', 'nukidora']:
-            time.sleep(random.uniform(2.3, 2.5))
+            if self.isNewRound and mtype == "nukidora":
+                time.sleep(3.75)
+            else:
+                time.sleep(random.uniform(2.3, 2.5))
             self.click_chiponkan(mjai_msg, tehai, tsumohai)
             # kan can have multiple candidates too! ex: tehai=1111m 1111p 111s 11z, tsumohai=1s
         
