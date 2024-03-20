@@ -360,7 +360,7 @@ class Akagi(App):
                 if gm_msg.data.get('name') == 'ActionNewRound':
                     self.action.isNewRound = True
                     self.action.reached = False
-            if gm_msg.method == '.lq.FastTest.inputOperation':
+            if gm_msg.method == '.lq.FastTest.inputOperation' or gm_msg.method == '.lq.FastTest.inputChiPengGang':
                 if gm_msg.type == MsgType.Req:
                     self.needOperate = False
                     self.gm_msg_list = []
