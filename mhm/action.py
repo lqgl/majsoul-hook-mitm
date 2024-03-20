@@ -165,7 +165,9 @@ class Action:
             if operation['type'] == ACTION2TYPE[mjai_msg['type']]:
                 self.page_clicker(LOCATION['actions'][idx])
                 self.do_autohu()
-                self.isNewRound = False
+                # fix wli choke dahai validation
+                if mjai_msg['type'] != 'reach' and mjai_msg['type'] != 'none':
+                    self.isNewRound = False
                 break
 
         if mjai_msg['type'] == 'reach':
