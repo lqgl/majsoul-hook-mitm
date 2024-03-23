@@ -29,7 +29,7 @@ AUTO_NEXT_GAME = False
 
 AUTO_GAME = {
     "endGameStage": [
-        (14.75, 8.3375),    # 点击确定按钮
+        (14.35, 8.12),    # 点击确定按钮，此坐标位于大厅的"商家"和"寻觅"按钮之间
         (6.825, 6.8),       # 点击好感度礼物
         (11.5, 2.75),       # 点击段位场
     ],
@@ -108,27 +108,42 @@ def start_playwright():
             parse_msg = game_end_msgs.pop(0)
             if AUTO_NEXT_GAME:
                 if parse_msg['method'] == '.lq.NotifyGameEndResult':
+                    # 1.等待结算
                     time.sleep(30)
+
+                    # 2.最终顺位界面点击"确认"
                     xy_scale = {"x": AUTO_GAME['endGameStage'][0][0] * scale,
                                 "y": AUTO_GAME['endGameStage'][0][1] * scale}
                     page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                     time.sleep(1)
                     page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                     time.sleep(5)
+
+                    # 3. 段位pt结算界面点击"确认"
                     page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                     time.sleep(10)
+
+                    # 4. 开启宝匣礼物
                     xy_scale = {"x": AUTO_GAME['endGameStage'][1][0] * scale,
                                 "y": AUTO_GAME['endGameStage'][1][1] * scale}
                     page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                     time.sleep(1)
                     page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                     time.sleep(5)
+
+                    # 5. 宝匣好感度界面点击"确认"
                     xy_scale = {"x": AUTO_GAME['endGameStage'][0][0] * scale,
                                 "y": AUTO_GAME['endGameStage'][0][1] * scale}
                     page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
                     time.sleep(1)
                     page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
                     time.sleep(5)
+
+                    # 6. 每日任务界面点击"确认"
+                    page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+                    time.sleep(8)
+
+                    # 7. 大厅界面点击段位场
                     xy_scale = {"x": AUTO_GAME['endGameStage'][2][0] * scale,
                                 "y": AUTO_GAME['endGameStage'][2][1] * scale}
                     page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
