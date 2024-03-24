@@ -155,7 +155,7 @@ class Action:
                     latest_operation_list_temp.remove(operation)
 
         # Sort latest_operation_list by ACTION_PIORITY
-        # logger.debug(f"latest_operation_list_temp: {latest_operation_list_temp}")
+        logger.debug(f"latest_operation_list_temp: {latest_operation_list_temp}")
         latest_operation_list_temp.sort(key=lambda x: ACTION_PIORITY[x['type']])
 
         if tsumohai != '?' and mjai_msg['type'] == 'hora':
@@ -298,42 +298,56 @@ class Action:
                 self.page_clicker(pai_coord)
                 break
         
-
-    def mjai2action(self, mjai_msg: dict | None, tehai: list[str], tsumohai: str | None, isliqi: bool):
-        # print(f"mjai2action: mjai_msg:{mjai_msg} tehai:{tehai} tsomohai:{tsumohai}")
+    def action_delay(self, mjai_msg: dict | None, isliqi: bool):
+        delay_time = 1.0
+        if mjai_msg is None:
+            return delay_time
+        mtype = mjai_msg['type']
+        if mtype == 'dahai' and not self.reached:
+            if self.isNewRound:
+                delay_time = 4
+            else:
+                if self.moqiedelay:
+                    # if someone reached
+                    if isliqi:
+                        delay_time = 4.75
+                    elif not mjai_msg['tsumogiri']:
+                        if mjai_msg['pai'] in YAOJIU:
+                            delay_time = random.uniform(1.0, 1.5)
+                        elif mjai_msg['pai'] in TWOEIGHT:
+                            delay_time = random.uniform(1.8, 2.25)
+                        elif mjai_msg['pai'] in TFFSS:
+                            delay_time = random.uniform(2.5, 2.75)
+                        elif mjai_msg['pai'] in REDFIVE:
+                            delay_time = random.uniform(3, 3.25)
+                    else:
+                        # tsumogiri
+                        delay_time = random.uniform(1.0, 2.5)
+                else:
+                    delay_time = random.uniform(1.9, 2.8)
+            return delay_time
+        if mtype in ['none', 'chi', 'pon', 'daiminkan', 'ankan', 'kakan', 'hora', 'reach', 'ryukyoku', 'nukidora']:
+            if self.isNewRound and mtype == "nukidora":
+                delay_time = 3.75
+            elif mtype == "none":
+                delay_time = 1.5
+            else:
+                delay_time = 2.0
+            return delay_time
+    def mjai2action(self, mjai_msg: dict | None, tehai: list[str], tsumohai: str | None, delay_time: float):
+        logger.debug(f"mjai2action: mjai_msg:{mjai_msg} tehai:{tehai} tsomohai:{tsumohai}, delay_time:{delay_time}")
         # 将字符串解析为字典
-        dahai_delay = self.decide_random_time()     
         if mjai_msg is None:
             return
         mtype = mjai_msg['type']
         if mtype == 'dahai' and not self.reached:
-            if not self.isNewRound and self.moqiedelay:
-                if isliqi:
-                    # if someone reached
-                    dahai_delay = 4.75
-                elif not mjai_msg['tsumogiri']:
-                    if mjai_msg['pai'] in YAOJIU:
-                        dahai_delay = dahai_delay
-                    elif mjai_msg['pai'] in TWOEIGHT:
-                        dahai_delay = 2.25
-                    elif mjai_msg['pai'] in TFFSS:
-                        dahai_delay = 2.75
-                    elif mjai_msg['pai'] in REDFIVE:
-                        dahai_delay = 3.25
-                else:
-                    # tsumogiri
-                    dahai_delay = dahai_delay
-                logger.info(f"dahai_delay:{dahai_delay}")
-            time.sleep(dahai_delay)
+            time.sleep(delay_time)
             self.click_dahai(mjai_msg, tehai, tsumohai)
             return
         # 这里是mjai的events
         # https://mjai.app/docs/mjai-protocol#:~:text=Flowchart-,Events,-Start%20Game
         if mtype in ['none', 'chi', 'pon', 'daiminkan', 'ankan', 'kakan', 'hora', 'reach', 'ryukyoku', 'nukidora']:
-            if self.isNewRound and mtype == "nukidora":
-                time.sleep(3.75)
-            else:
-                time.sleep(random.uniform(2.3, 2.5))
+            time.sleep(delay_time)
             self.click_chiponkan(mjai_msg, tehai, tsumohai)
             # kan can have multiple candidates too! ex: tehai=1111m 1111p 111s 11z, tsumohai=1s
         

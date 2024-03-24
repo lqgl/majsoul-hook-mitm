@@ -6,16 +6,29 @@ from .proto import MsgManager
 from mitmproxy import http
 from urllib.parse import urlparse, parse_qs
 
-
-gm_msgs = [] # game msgs
+activated_flows = []
+messages_dict = dict() # flow.id -> Queue[gm_msg]
+message_idx = dict() # flow.id -> int
 
 def log(mger: MsgManager):
     msg = mger.m
     # logger.info(f"[i][gold1]& {mger.tag} {msg.type.name} {msg.method} {msg.id}")
     # logger.debug(f"[cyan3]# {msg.amended} {msg.data}")
 
-def get_messages():
-    return gm_msgs
+def get_messages(flow_id):
+    try:
+        idx = message_idx[flow_id]
+    except KeyError:
+        message_idx[flow_id] = 0
+        idx = 0
+    if (flow_id not in activated_flows) or (len(messages_dict[flow_id])==0) or (message_idx[flow_id]>=len(messages_dict[flow_id])):
+        return None
+    msg = messages_dict[flow_id][idx]
+    message_idx[flow_id] += 1
+    return msg
+
+def get_activated_flows():
+    return activated_flows
 
 class WebSocketAddon:
     def __init__(self):
@@ -37,9 +50,16 @@ class WebSocketAddon:
 
     def websocket_start(self, flow: http.HTTPFlow):
         logger.info(" ".join(["[i][green]Connected", flow.id[:13]]))
+        global activated_flows,messages_dict
+        
+        activated_flows.append(flow.id)
+        messages_dict[flow.id]=[]
 
     def websocket_end(self, flow: http.HTTPFlow):
         logger.info(" ".join(["[i][blue]Disconnected", flow.id[:13]]))
+        global activated_flows,messages_dict
+        activated_flows.remove(flow.id)
+        messages_dict.pop(flow.id)
 
     def websocket_message(self, flow: http.HTTPFlow):
         # make type checker happy
@@ -53,8 +73,8 @@ class WebSocketAddon:
 
             return
         
-        global gm_msgs
-        gm_msgs.append(self.manager.m)
+        global activated_flows,messages_dict
+        messages_dict[flow.id].append(self.manager.m)
 
         if self.manager.member:
             for hook in hooks:
