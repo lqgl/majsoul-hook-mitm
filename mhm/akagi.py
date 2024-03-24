@@ -8,7 +8,7 @@ from textual.screen import Screen
 from textual.widgets import (Button, Checkbox, Footer, Header, Input, Label,
                              LoadingIndicator, Log, Markdown, Pretty, Rule,
                              Static)
-
+import json
 from mhm.action import Action
 from mhm.majsoul2mjai import MajsoulBridge
 from . import conf
@@ -18,7 +18,7 @@ from mhm.tileUnicode import TILE_2_UNICODE_ART_RICH, VERTICLE_RULE, HAI_VALUE
 from mhm.proto import MsgType, Tool
 from loguru import logger
 
-game_end_msgs = []
+game_msgs = []
 ENABLEPLAYWRIGHT = False
 AUTOPLAY = True
 AUTONEXT = False
@@ -123,7 +123,8 @@ class FlowScreen(Screen):
                 self.game_log_container.scroll_end(animate=False)
                 self.gm_msg_idx += 1
                 gm_msg = self.app.gm_msg_dict[self.flow_id][-1]
-                logger.debug(f"gm_msg:{gm_msg}")
+                # logger.debug(f"gm_msg:{gm_msg}")
+                global game_msgs
                 if gm_msg['type'] == MsgType.Notify:
                     # 操作通知
                     if gm_msg['method'] == '.lq.ActionPrototype':
@@ -148,9 +149,18 @@ class FlowScreen(Screen):
                             self.dahai_verfication_job.stop()
                             self.dahai_verfication_job = None
                         if AUTONEXT:
-                            global game_end_msgs
-                            game_end_msgs.append(gm_msg)
+                            game_msgs.append(gm_msg)
                         self.action_quit()
+                    if gm_msg['method'] == '.lq.NotifyGameBroadcast':
+                        seat = gm_msg['data'].get('seat')
+                        emo_str = gm_msg['data'].get('content')
+                        self_seat = self.app.bridge[self.flow_id].seat
+                        if emo_str is not None:
+                            emo = json.loads(emo_str).get('emo')
+                            if seat != self_seat:
+                                game_msgs.append(gm_msg)
+                            logger.info(f"self_seat:{self_seat} recieved seat:{seat}, emo:{emo}")
+
                 elif gm_msg['type'] == MsgType.Req:
                     # 操作请求
                     if gm_msg['method'] == '.lq.FastTest.inputOperation' or gm_msg['method'] == '.lq.FastTest.inputChiPengGang':

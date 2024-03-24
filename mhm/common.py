@@ -1,12 +1,12 @@
 import asyncio
-import time
+import time, random
 import threading
 
 from . import pRoot, conf, resver, init
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 from mhm.action import get_click_list, get_autohu
-from mhm.akagi import Akagi, game_end_msgs
+from mhm.akagi import Akagi, game_msgs
 from loguru import logger
 
 PROXINJECTOR = pRoot / "common/proxinject/proxinjector-cli"
@@ -31,6 +31,11 @@ AUTO_GAME = {
         (11.5, 6.5625), # 三人南
         (11.5, 5.4),    # 三人东
     ],
+    "emotions": [
+        (12.4, 3.5), (13.65, 3.5), (14.8, 3.5),   # 1 2 3
+        (12.4, 5.0), (13.65, 5.0), (14.8, 5.0),    # 4 5 6
+        (12.4, 6.5), (13.65, 6.5), (14.8, 6.5),    # 7 8 9
+    ]
 }
 
 def _cmd(dict):
@@ -60,6 +65,24 @@ async def start_inject():
 
         await asyncio.sleep(0.8)
 
+def randomEmotion(page, scale):
+    xy = (15.675, 4.9625)
+    xy_scale = {"x":xy[0]*scale,"y":xy[1]*scale}
+    page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+    time.sleep(0.1)
+    page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+    print(f"page_clicker: {xy_scale} click emotions")
+    time.sleep(0.3)
+
+    # index = random.randint(0, 8)
+    index = 2
+    xy = AUTO_GAME["emotions"][index]
+    xy_scale = {"x":xy[0]*scale,"y":xy[1]*scale}
+    page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+    time.sleep(0.1)
+    page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+    print(f"page_clicker: {xy_scale} click the {index} emotion")
+
 def start_playwright():
     playwright_width = conf.playwright['width']
     playwright_height = conf.playwright['height']
@@ -83,8 +106,14 @@ def start_playwright():
 
     while True:
         # 处理游戏结束消息
-        if len(game_end_msgs) > 0:
-            parse_msg = game_end_msgs.pop(0)
+        if len(game_msgs) > 0:
+            parse_msg = game_msgs.pop(0)
+            # 处理他人表情响应
+            if parse_msg['method'] == '.lq.NotifyGameBroadcast':
+                randomN = random.uniform(0.0, 100.0)
+                # 50%
+                if randomN <= 50.0:
+                    randomEmotion(page, scale)
             if parse_msg['method'] == '.lq.NotifyGameEndResult':
                 # 1.等待结算
                 time.sleep(30)
