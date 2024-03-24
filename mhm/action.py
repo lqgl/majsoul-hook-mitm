@@ -1,10 +1,10 @@
 import time
 import random
-from mhm.convert import MS_TILE_2_MJAI_TILE
+from .convert import MS_TILE_2_MJAI_TILE
 from functools import cmp_to_key
-from mhm.majsoul2mjai import compare_pai
+from .majsoul2mjai import compare_pai
 from loguru import logger
-from . import conf
+from .config import config
 
 click_list = []
 do_autohu = False
@@ -107,17 +107,12 @@ def get_click_list():
 def get_autohu():
     return do_autohu
 
-# with open("settings.json", "r") as f:
-#     settings = json.load(f)
-#     PLAYWRIGHT_RESOLUTION = (settings['Playwright']['width'], settings['Playwright']['height'])
-#     SCALE = PLAYWRIGHT_RESOLUTION[0]/16
-
 class Action:
     def __init__(self):
         self.isNewRound = True
         self.reached = False
         self.latest_operation_list = []
-        self.moqiedelay = conf.playwright["moqiedelay"]
+        self.moqiedelay = config.playwright.args.get("moqiedelay")
         pass
 
     def page_clicker(self, coord: tuple[float, float]):

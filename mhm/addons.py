@@ -1,19 +1,14 @@
-import re, json
-
-from . import logger
-from .hook import hooks
+import json
+from . import console
+from .config import config
+from .hook import Hook
 from .proto import MsgManager
-from mitmproxy import http
 from urllib.parse import urlparse, parse_qs
+from mitmproxy import http
 
 activated_flows = []
 messages_dict = dict() # flow.id -> Queue[gm_msg]
 message_idx = dict() # flow.id -> int
-
-def log(mger: MsgManager):
-    msg = mger.m
-    # logger.info(f"[i][gold1]& {mger.tag} {msg.type.name} {msg.method} {msg.id}")
-    # logger.debug(f"[cyan3]# {msg.amended} {msg.data}")
 
 def get_messages(flow_id):
     try:
@@ -30,8 +25,34 @@ def get_messages(flow_id):
 def get_activated_flows():
     return activated_flows
 
+def log(debug: bool, mger: MsgManager):
+    match mger.m.status:
+        case "Md" | "ToMd":
+            head = "red"
+        case "Dp":
+            head = "green4"
+        case "Og":
+            head = "grey85"
+
+    console.log(
+        " ".join(
+            [
+                f"[{head}]{mger.m.status}[/{head}]",
+                f"[grey50]{mger.tag}[/grey50]",
+                f"[cyan2]{mger.m.type.name}[/cyan2]",
+                f"[gold1]{mger.m.method}[/gold1]",
+                f"[cyan3]{mger.m.id}[/cyan3]",
+            ]
+        )
+    )
+
+    if debug:
+        console.log(f"-->> {mger.m.data}")
+
 class WebSocketAddon:
-    def __init__(self):
+    def __init__(self, hooks: list[Hook]):
+        self.hooks = hooks
+        self.debug = config.base.debug
         self.manager = MsgManager()
 
     def request(self, flow: http.HTTPFlow):
@@ -41,22 +62,18 @@ class WebSocketAddon:
             try:
                 content = json.loads(qs["content"][0])
                 if content["type"] == "re_err":
-                    logger.warning(" ".join(["[i][red]Error", str(qs)]))
                     flow.kill()
-                else:
-                    logger.debug(" ".join(["[i][green]Log", str(qs)]))
             except:
                 return
 
     def websocket_start(self, flow: http.HTTPFlow):
-        logger.info(" ".join(["[i][green]Connected", flow.id[:13]]))
+        console.log(" ".join(["[i][green]Connected", flow.id[:13]]))
         global activated_flows,messages_dict
-        
         activated_flows.append(flow.id)
         messages_dict[flow.id]=[]
 
     def websocket_end(self, flow: http.HTTPFlow):
-        logger.info(" ".join(["[i][blue]Disconnected", flow.id[:13]]))
+        console.log(" ".join(["[i][blue]Disconnected", flow.id[:13]]))
         global activated_flows,messages_dict
         activated_flows.remove(flow.id)
         messages_dict.pop(flow.id)
@@ -67,27 +84,17 @@ class WebSocketAddon:
 
         try:
             self.manager.parse(flow)
-        except:
-            logger.warning(" ".join(["[i][red]Unsupported Message @", flow.id[:13]]))
-            logger.debug(__import__("traceback").format_exc())
+        except Exception:
+            console.log(f"[red]Unsupported Message @ {flow.id[:13]}")
 
-            return
-        
         global activated_flows,messages_dict
         messages_dict[flow.id].append(self.manager.m)
 
         if self.manager.member:
-            for hook in hooks:
+            for hook in self.hooks:
                 try:
-                    hook.hook(self.manager)
-                except:
-                    # logger.warning(" ".join(["[i][red]Error", self.manager.m.method]))
-                    logger.debug(__import__("traceback").format_exc())
+                    self.manager.apply(hook.apply)
+                except Exception:
+                    console.print_exception()
 
-            if self.manager.m.amended:
-                self.manager.apply()
-
-        log(self.manager)
-
-
-addons = [WebSocketAddon()]
+        log(self.debug, self.manager)

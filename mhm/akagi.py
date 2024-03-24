@@ -9,19 +9,25 @@ from textual.widgets import (Button, Checkbox, Footer, Header, Input, Label,
                              LoadingIndicator, Log, Markdown, Pretty, Rule,
                              Static)
 import json
-from mhm.action import Action
-from mhm.majsoul2mjai import MajsoulBridge
-from . import conf
-from mhm.addons import get_messages,get_activated_flows
-from mhm.libriichi_helper import meta_to_recommend, state_to_tehai
-from mhm.tileUnicode import TILE_2_UNICODE_ART_RICH, VERTICLE_RULE, HAI_VALUE
-from mhm.proto import MsgType, Tool
+from .action import Action
+from .majsoul2mjai import MajsoulBridge
+from .addons import get_messages,get_activated_flows
+from .libriichi_helper import meta_to_recommend, state_to_tehai
+from .tileUnicode import TILE_2_UNICODE_ART_RICH, VERTICLE_RULE, HAI_VALUE
+from .proto import MsgType, Tool
+from .config import config
 from loguru import logger
 
 game_msgs = []
 ENABLEPLAYWRIGHT = False
-AUTOPLAY = True
+AUTOPLAY = False
 AUTONEXT = False
+
+def get_game_msgs():
+    return game_msgs
+
+def get_auto_next():
+    return AUTONEXT
 
 class FlowScreen(Screen):
 
@@ -316,9 +322,10 @@ class Akagi(App):
         self.active_flows = []
         self.gm_msg_dict  = dict() # flow.id -> List[gm_msg]
         self.mjai_msg_dict  = dict() # flow.id -> List[mjai_msg]
-        if conf.playwright["enable"]:
-            global ENABLEPLAYWRIGHT
+        if config.playwright.enable:
+            global ENABLEPLAYWRIGHT, AUTOPLAY
             ENABLEPLAYWRIGHT = True
+            AUTOPLAY = True
 
     def on_mount(self) -> None:
         self.update_flow = self.set_interval(1, self.refresh_flow)
