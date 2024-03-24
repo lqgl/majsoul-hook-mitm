@@ -115,6 +115,23 @@ class FlowScreen(Screen):
         except IndexError:
             self.akagi_action.label = "Akagi"
 
+    def reset_containers(self):
+        # tehai
+        for idx, tehai_label in enumerate(self.tehai_labels):
+            tehai_label.update(TILE_2_UNICODE_ART_RICH["?"])
+        for idx, tehai_value_label in enumerate(self.tehai_value_labels):
+            tehai_value_label.update(HAI_VALUE[40])
+        self.tsumohai_label.update(TILE_2_UNICODE_ART_RICH["?"])
+        self.tsumohai_value_label.update(HAI_VALUE[40])
+        # akagi
+        self.akagi_action.label = "Akagi"
+        for akagi_action_class in self.akagi_action.classes:
+            self.akagi_action.remove_class(akagi_action_class)
+        self.akagi_pai.label = "None"
+        for akagi_pai_class in self.akagi_pai.classes:
+            self.akagi_pai.remove_class(akagi_pai_class)
+        self.pai_unicode_art.update(TILE_2_UNICODE_ART_RICH["?"])
+
     def refresh_log(self) -> None:
         # Yes I know this is stupid
         try:
@@ -143,6 +160,10 @@ class FlowScreen(Screen):
                         if self.dahai_verfication_job is not None:
                             self.dahai_verfication_job.stop()
                             self.dahai_verfication_job = None
+                    # 对局结束
+                    if gm_msg['data'].get('name') == 'ActionHule' or gm_msg['data'].get('name') == 'ActionNoTile' or gm_msg['data'].get('name') == 'ActionLiuJu':
+                        self.reset_containers()
+                    
                     # 游戏结束
                     if gm_msg['method'] == '.lq.NotifyGameEndResult' or gm_msg['method'] == '.lq.NotifyGameTerminate':
                         if self.dahai_verfication_job is not None:
@@ -258,8 +279,9 @@ class FlowScreen(Screen):
         pass
 
     def redo_action(self) -> None:
-        logger.debug("开始重新操作...")
-        self.action.mjai2action(self.app.mjai_msg_dict[self.flow_id][-1], self.tehai, self.tsumohai, 0.0)
+        if self.flow_id in self.app.mjai_msg_dict:
+            logger.debug("开始重新操作...")
+            self.action.mjai2action(self.app.mjai_msg_dict[self.flow_id][-1], self.tehai, self.tsumohai, 0.0)
 
     def action_quit(self) -> None:
         self.app.set_timer(2, self.app.update_flow.resume)
