@@ -31,6 +31,8 @@ mhm 使用 Proxinject 在雀魂客户端中注入 Socks5 代理
 
 - 雀魂网页端
 
+> 注: 以上平台均支持 **Akagi** ，但自动功能仅支持雀魂网页端。
+
 ## 使用方法
 
 安装配置 mhm 需求 Python >= 3.10
@@ -80,12 +82,12 @@ python -m mhm
 
 | 释义         | 键               | 可用值        |
 | ------------ | ---------------- | ------------- |
-| 启用全皮肤   | enable_skins     | true \| false |
-| 启用小助手   | enable_aider     | true \| false |
-| 启用伪寻觅   | enable_chest     | true \| false |
+| 启用全皮肤   | skins     | true \| false |
+| 启用小助手   | aider     | true \| false |
+| 启用伪寻觅   | chest     | true \| false |
 | 随机星标皮肤 | random_star_char | true \| false |
 
-> 注: 小助手需要手动启动。
+> 注: 小助手需要手动启动，建议先启动小助手，后启动 mhm。
 
 以下表格解释了 playwright 中 auto_next_args 可用的配置选项：
 
