@@ -59,7 +59,7 @@ python -m playwright install chromium
 
 使用 Akagi
 
-> 到 [Discord](https://discord.gg/Z2wjXUK8bN) 下载 Akagi 提供的 bot.zip。 注: 网盘中除 v2 版本均可用，任选一个下载。解压获取 **mortal.pth** 文件，放置到 bot 文件夹中。
+> 到 [Discord](https://discord.gg/Z2wjXUK8bN) 下载由 Akagi 提供的`v4`版本的 bot.zip, 解压获取 **mortal.pth** 文件，放置到 bot 文件夹中。
 
 > 注: 3p 的 mortal.pth 及对应的 libriichi3p 文件需捐赠 Akagi 进行获取.
 
