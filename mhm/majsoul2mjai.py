@@ -4,10 +4,9 @@ import base64
 from mhm.mjai.player import MjaiPlayerClient
 from mhm.proto import MsgType
 from .convert import MS_TILE_2_MJAI_TILE, MJAI_TILE_2_MS_TILE
-from google.protobuf.json_format import MessageToDict
 from functools import cmp_to_key
 from mhm.proto import liqi_pb2 as pb
-from . import logger
+from loguru import logger
 
 class Operation:
     NoEffect = 0
@@ -366,19 +365,6 @@ class MajsoulBridge:
 
             # hora
             if parse_msg['data']['name'] == 'ActionHule':
-                # actor = parse_msg['data']['hules']['seat']
-                # if parse_msg['data']['hules']['zimo']:
-                #     target = actor
-                # else:
-                #     target = self.lastDiscard
-                # pai = MS_TILE_2_MJAI_TILE[parse_msg['data']['hules']['huTile']]
-                # self.mjai_message.append(
-                #     {
-                #         'type': 'hora',
-                #         'actor': actor,
-                #         'pai': pai
-                #     }
-                # )
                 self.mjai_message = []
                 self.mjai_message.append(
                     {
@@ -403,11 +389,6 @@ class MajsoulBridge:
                 return None
             # ryukyoku
             if parse_msg['data']['name'] == 'ActionLiuJu':
-                # self.mjai_message.append(
-                #     {
-                #         'type': 'ryukyoku'
-                #     }
-                # )
                 self.mjai_message = []
                 self.mjai_message.append(
                     {
@@ -454,158 +435,7 @@ class MajsoulBridge:
             }]
             out = mjai_client.react(str(reach).replace("\'", "\""))
             json_out = json.loads(out)
-        return json_out
-    
-    # def action(self, mjai_msg: dict|None, liqi: LiqiProto) -> bytes | None:
-    #     if len(self.temp) != 0 and self.AllReady:
-    #         temp = self.temp
-    #         self.temp = {}
-    #         time.sleep(3)
-    #         return liqi.compose(temp)
-    #     if mjai_msg is None:
-    #         return None
-        
-    #     """
-    #     data = {
-    #         'id': msg_id, 
-    #         'type': msg_type,
-    #         'method': method_name, 
-    #         'data': dict_obj
-    #     }
-    #     """
-    #     # time.sleep(2)
-    #     data = {}
-    #     data['id'] = -1
-    #     data['type'] = MsgType.Req
-    #     data['method'] = ''
-    #     data['data'] = {}
-    #     match mjai_msg['type']:
-    #         case 'none':
-    #             # What if we canceled ron?
-    #             data['method'] = '.lq.FastTest.inputChiPengGang'
-    #             data['data']['cancelOperation'] = True
-    #             data['data']['timeuse'] = 4
-    #         case 'dahai':
-    #             data['method'] = '.lq.FastTest.inputOperation'
-    #             data['data']['type'] = Operation.Discard
-    #             data['data']['tile'] = MJAI_TILE_2_MS_TILE[mjai_msg['pai']]
-    #             data['data']['moqie'] = mjai_msg['tsumogiri']
-    #             data['data']['timeuse'] = 4
-    #             if self.reach:
-    #                 data['data']['type'] = Operation.Liqi
-    #                 self.reach = False
-    #                 pass
-    #         case 'chi':
-    #             data['method'] = '.lq.FastTest.inputChiPengGang'
-    #             data['data']['type'] = Operation.Chi
-    #             data['data']['index'] = -1
-    #             data['data']['timeuse'] = 4
-
-    #             operation = next(item for item in self.operation['operationList'] if item["type"] == Operation.Chi)
-    #             mjai_consumed = mjai_msg['consumed']
-    #             mjai_consumed.sort()
-    #             for idx, consumed in enumerate(operation['combination']):
-    #                 consumed = consumed.split('|')
-    #                 consumed = [MS_TILE_2_MJAI_TILE[c] for c in consumed]
-    #                 consumed.sort()
-    #                 if consumed == mjai_consumed:
-    #                     data['data']['index'] = idx
-    #                     break
-    #             assert data['data']['index'] != -1
-    #         case 'pon':
-    #             data['method'] = '.lq.FastTest.inputChiPengGang'
-    #             data['data']['type'] = Operation.Peng
-    #             data['data']['index'] = -1
-    #             data['data']['timeuse'] = 4
-
-    #             operation = next(item for item in self.operation['operationList'] if item["type"] == Operation.Peng)
-    #             mjai_consumed = mjai_msg['consumed']
-    #             mjai_consumed.sort()
-    #             for idx, consumed in enumerate(operation['combination']):
-    #                 consumed = consumed.split('|')
-    #                 consumed = [MS_TILE_2_MJAI_TILE[c] for c in consumed]
-    #                 consumed.sort()
-    #                 if consumed == mjai_consumed:
-    #                     data['data']['index'] = idx
-    #                     break
-    #             assert data['data']['index'] != -1
-    #         case 'daiminkan':
-    #             data['method'] = '.lq.FastTest.inputChiPengGang'
-    #             data['data']['type'] = Operation.MingGang
-    #             data['data']['index'] = -1
-    #             data['data']['timeuse'] = 4
-
-    #             operation = next(item for item in self.operation['operationList'] if item["type"] == Operation.MingGang)
-    #             mjai_consumed = mjai_msg['consumed']
-    #             mjai_consumed.sort()
-    #             for idx, consumed in enumerate(operation['combination']):
-    #                 consumed = consumed.split('|')
-    #                 consumed = [MS_TILE_2_MJAI_TILE[c] for c in consumed]
-    #                 consumed.sort()
-    #                 if consumed == mjai_consumed:
-    #                     data['data']['index'] = idx
-    #                     break
-    #             assert data['data']['index'] != -1
-    #         case 'ankan':
-    #             data['method'] = '.lq.FastTest.inputOperation'
-    #             data['data']['type'] = Operation.AnGang
-    #             data['data']['index'] = -1
-    #             data['data']['timeuse'] = 4
-
-    #             operation = next(item for item in self.operation['operationList'] if item["type"] == Operation.MingGang)
-    #             mjai_consumed = mjai_msg['consumed']
-    #             mjai_consumed.sort()
-    #             for idx, consumed in enumerate(operation['combination']):
-    #                 consumed = consumed.split('|')
-    #                 consumed = [MS_TILE_2_MJAI_TILE[c] for c in consumed]
-    #                 consumed.sort()
-    #                 if consumed == mjai_consumed:
-    #                     data['data']['index'] = idx
-    #                     break
-    #             assert data['data']['index'] != -1
-    #         case 'kakan':
-    #             data['method'] = '.lq.FastTest.inputOperation'
-    #             data['data']['type'] = Operation.JiaGang
-    #             data['data']['index'] = -1
-    #             data['data']['timeuse'] = 4
-
-    #             operation = next(item for item in self.operation['operationList'] if item["type"] == Operation.JiaGang)
-    #             mjai_consumed = mjai_msg['consumed'] + [mjai_msg['pai']]
-    #             mjai_consumed.sort()
-    #             for idx, consumed in enumerate(operation['combination']):
-    #                 consumed = consumed.split('|')
-    #                 consumed = [MS_TILE_2_MJAI_TILE[c] for c in consumed]
-    #                 consumed.sort()
-    #                 if consumed == mjai_consumed:
-    #                     data['data']['index'] = idx
-    #                     break
-    #             assert data['data']['index'] != -1
-    #         case 'hora':
-    #             if mjai_msg['actor'] == mjai_msg['target']:
-    #                 data['method'] = '.lq.FastTest.inputOperation'
-    #                 data['data']['type'] = Operation.Zimo
-    #             else:
-    #                 data['method'] = '.lq.FastTest.inputChiPengGang'
-    #                 data['data']['type'] = Operation.Hu
-    #             data['data']['timeuse'] = 4
-    #         case 'ryukyoku':
-    #             data['method'] = '.lq.FastTest.inputOperation'
-    #             data['data']['type'] = Operation.LiuJu
-    #             data['data']['timeuse'] = 4
-    #         case _:
-    #             raise
-    #     if self.AllReady and len(self.temp) == 0:
-    #         return liqi.compose(data)
-    #     elif self.AllReady:
-    #         temp = self.temp
-    #         self.temp = {}
-    #         return liqi.compose(temp)
-    #     else:
-    #         self.temp = data
-
-    def to_reading(self, mjai_msg):
-        pass
-        
+        return json_out    
 
 def compare_pai(pai1: str, pai2: str):
     # Smallest

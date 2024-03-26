@@ -1,84 +1,25 @@
-import os
 import json
+import os
 import random
+from pathlib import Path
 
-from mhm import pRoot, conf, resver
+from mhm.config import config
 from mhm.hook import Hook
 from mhm.proto import MsgManager, MsgType
-
-
-def _skin(charid: int) -> int:
-    return charid % 1000 * 100 + 400001
-
-
-def _skins(charid_set):
-    for m in charid_set:
-        i = _skin(m)
-        for n in range(i, i + 9):
-            yield n
-
-
-def _characters(charid_set):
-    for m in charid_set:
-        yield {
-            "charid": m,
-            "level": 5,
-            "exp": 1,
-            "skin": _skin(m),
-            "extra_emoji": resver.emotes.get(str(m)),
-            "is_upgraded": True,
-            "rewarded_level": [],
-            "views": [],
-        }
-
-
-class SkinInfo:
-    RENAME_SCROLL = 302013
-
-    def __init__(self) -> None:
-        inFrameSet = {305529, 305537, 305542, 305545, 305551, 305552} | set(
-            range(305520, 305524)
-        )
-
-        exItemSet = {305214, 305314, 305526, 305725} | set(
-            range(305501, 305556)
-        ).difference(inFrameSet)
-
-        exTitleSet = {
-            600030,
-            600043,
-            # 600017,
-            # 600024,
-            # 600025,
-            # 600029,
-            # 600041,
-            # 600044,
-        } | set(range(600057, 600064))
-
-        # HACK: item ids should be obtained from the file lqc.lqbin
-        from ._items import EXTENDED_ITEMS
-
-        aItemList = sorted(set(range(305001, 309000)).difference(exItemSet))
-        aItemList.append(SkinInfo.RENAME_SCROLL)
-        aItemList.extend(EXTENDED_ITEMS)
-        aTitleList = sorted(set(range(600002, 600082)).difference(exTitleSet))
-
-        self.titleList = aTitleList
-        self.itemList = [{"item_id": i, "stack": 1} for i in aItemList]
+from mhm.resource import ResourceManager
 
 
 class KinHook(Hook):
-    def __init__(self) -> None:
+    def __init__(self, resger: ResourceManager) -> None:  # noqa: C901
         super().__init__()
 
-        self.info = SkinInfo()
-        self.path = pRoot / "account"
+        self.path = Path("./account")
 
         if not os.path.exists(self.path):
             os.mkdir(self.path)
 
-        self.mapSkin: dict[int, Skin] = dict()
-        self.mapGame: dict[str, dict] = dict()
+        self.mapSkin: dict[int, Skin] = {}
+        self.mapGame: dict[str, dict] = {}
 
         # Response
 
@@ -86,7 +27,7 @@ class KinHook(Hook):
         @self.bind(MsgType.Res, ".lq.Lobby.emailLogin")
         @self.bind(MsgType.Res, ".lq.Lobby.oauth2Login")  # login
         def _(mger: MsgManager):
-            self.mapSkin[mger.member] = Skin(self.path, mger)
+            self.mapSkin[mger.member] = Skin(self.path, mger, resger)
             self.mapSkin[mger.member].update_player(mger.data.get("account"))
             mger.amend()
 
@@ -106,8 +47,8 @@ class KinHook(Hook):
         def _(mger: MsgManager):
             # 替换信息
             if mSkin := self.mapSkin.get(mger.member):
-                mger.data["bag_info"]["bag"]["items"].extend(self.info.itemList)
-                mger.data["title_list"]["title_list"] = self.info.titleList
+                mger.data["bag_info"]["bag"]["items"].extend(resger.bag_rows)
+                mger.data["title_list"]["title_list"] = resger.title_rows
                 mger.data["all_common_views"] = mSkin.commonviews
                 mger.data["character_info"] = mSkin.characterinfo
                 mger.amend()
@@ -115,15 +56,15 @@ class KinHook(Hook):
         @self.bind(MsgType.Res, ".lq.Lobby.fetchBagInfo")
         def _(mger: MsgManager):
             # 添加物品
-            if mSkin := self.mapSkin.get(mger.member):
-                mger.data["bag"]["items"].extend(self.info.itemList)
+            if self.mapSkin.get(mger.member):
+                mger.data["bag"]["items"].extend(resger.bag_rows)
                 mger.amend()
 
         @self.bind(MsgType.Res, ".lq.Lobby.fetchTitleList")
         def _(mger: MsgManager):
             # 添加头衔
-            if mSkin := self.mapSkin.get(mger.member):
-                mger.data["title_list"] = self.info.titleList
+            if self.mapSkin.get(mger.member):
+                mger.data["title_list"] = resger.title_rows
                 mger.amend()
 
         @self.bind(MsgType.Res, ".lq.Lobby.fetchAllCommonViews")
@@ -160,7 +101,7 @@ class KinHook(Hook):
                         if pSkin := self.mapSkin.get(player["account_id"]):
                             # 替换对局头像，角色、头衔
                             pSkin.update_player(player)
-                            if conf.hook.random_star_char:
+                            if config.base.random_star_char:
                                 nChar, nSkin = mSkin.random_star_character_and_skin
                                 player["character"], player["avatar_id"] = nChar, nSkin
                         else:
@@ -273,19 +214,19 @@ class KinHook(Hook):
         @self.bind(MsgType.Req, ".lq.Lobby.addFinishedEnding")
         def _(mger: MsgManager):
             # 屏蔽传记完成请求
-            if mSkin := self.mapSkin.get(mger.member):
+            if self.mapSkin.get(mger.member):
                 mger.respond()
 
         @self.bind(MsgType.Req, ".lq.Lobby.receiveEndingReward")
         def _(mger: MsgManager):
             # 屏蔽传记奖励请求
-            if mSkin := self.mapSkin.get(mger.member):
+            if self.mapSkin.get(mger.member):
                 mger.respond()
 
         @self.bind(MsgType.Req, ".lq.Lobby.receiveCharacterRewards")
         def _(mger: MsgManager):
             # 屏蔽角色奖励请求
-            if mSkin := self.mapSkin.get(mger.member):
+            if self.mapSkin.get(mger.member):
                 mger.respond()
 
         # Notify
@@ -301,7 +242,7 @@ class KinHook(Hook):
         @self.bind(MsgType.Notify, ".lq.NotifyGameFinishRewardV2")
         def _(mger: MsgManager):
             # 终局结算时，不播放羁绊动画
-            if mSkin := self.mapSkin.get(mger.member):
+            if self.mapSkin.get(mger.member):
                 mger.data["main_character"] = {"exp": 1, "add": 0, "level": 5}
                 mger.amend()
 
@@ -365,8 +306,8 @@ class Skin:
     def avatar_id(self) -> int:
         return self.character["skin"]
 
-    def __init__(self, root: str, mger: MsgManager) -> None:
-        self.path = root / "{}.json".format(mger.member)
+    def __init__(self, root: str, mger: MsgManager, resger: ResourceManager) -> None:
+        self.path = root / f"{mger.member}.json"
 
         # base attributes
         self.keys = ["title", "nickname", "loading_image"]
@@ -381,9 +322,9 @@ class Skin:
         self.update_self(mger.data.get("account"))
 
         if os.path.exists(self.path):
-            self.load()
+            self.load(resger)
         else:
-            self.init()
+            self.init(resger)
 
     def character_of(self, charid: int) -> dict:
         for character in self.characterinfo["characters"]:
@@ -410,8 +351,8 @@ class Skin:
 
             json.dump(data, f, ensure_ascii=False)
 
-    def load(self):
-        with open(self.path, "r", encoding="utf-8") as f:
+    def load(self, resger: ResourceManager):
+        with open(self.path, encoding="utf-8") as f:
             data: dict = json.load(f)
 
             base = data.get("base", data.get("account"))
@@ -421,9 +362,9 @@ class Skin:
             for key in self.keys:
                 setattr(self, key, base[key])
 
-            self.update_characterinfo()
+            self.update_characterinfo(resger)
 
-    def init(self):
+    def init(self, resger: ResourceManager):
         # commonviews
         self.commonviews = {
             "views": [{"values": [], "index": i} for i in range(0, 10)],
@@ -431,16 +372,10 @@ class Skin:
         }
 
         # characterinfo
-        res_charid_set = set(map(int, resver.emotes.keys()))
-
-        main_character_id = 200001
-        skins = list(_skins(res_charid_set))
-        characters = list(_characters(res_charid_set))
-
         self.characterinfo = {
-            "characters": characters,
-            "skins": skins,
-            "main_character_id": main_character_id,
+            "characters": resger.character_rows,
+            "skins": resger.skin_rows,
+            "main_character_id": 200001,
             "send_gift_limit": 2,
             "character_sort": [],
             "finished_endings": [],
@@ -452,20 +387,19 @@ class Skin:
         # save
         self.save()
 
-    def update_characterinfo(self):
-        charid_set = {i.get("charid") for i in self.characterinfo["characters"]}
-        res_charid_set = set(map(int, resver.emotes.keys()))
+    def update_characterinfo(self, resger: ResourceManager):
+        characters: list[dict] = self.characterinfo["characters"]
 
-        skins: list[int] = self.characterinfo.get("skins")
-        characters: list[dict] = self.characterinfo.get("characters")
+        now_charid_set = {m["charid"] for m in characters}
+        res_charid_set = {m["charid"] for m in resger.character_rows}
 
         for m in characters:
-            m["extra_emoji"] = resver.emotes.get(str(m["charid"]))
+            m["extra_emoji"] = resger.extra_emoji_map[m["charid"]]
 
-        if remove_m := sorted(charid_set - res_charid_set):
-            skins[:] = [m for m in skins if m not in _skins(remove_m)]
-            characters[:] = [m for m in characters if m.get("charid") not in remove_m]
+        if remove_chars := sorted(now_charid_set - res_charid_set):
+            characters[:] = {m for m in characters if m["charid"] not in remove_chars}
 
-        if extend_m := sorted(res_charid_set - charid_set):
-            skins.extend(_skins(extend_m))
-            characters.extend(_characters(extend_m))
+        if extend_chars := sorted(res_charid_set - now_charid_set):
+            characters.extend([resger.character_map[c] for c in extend_chars])
+
+        self.characterinfo["skins"] = resger.skin_rows

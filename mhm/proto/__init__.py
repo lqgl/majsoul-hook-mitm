@@ -1,11 +1,12 @@
 import base64
 import struct
+from dataclasses import dataclass
+from enum import Enum
+from typing import Literal
 
 from google.protobuf.json_format import MessageToDict, ParseDict
 from google.protobuf.message import Message
 from mitmproxy import ctx, http, websocket
-from dataclasses import dataclass
-from enum import Enum
 
 from . import liqi_pb2 as pb
 
@@ -29,7 +30,8 @@ class Msg:
     data: dict
 
     id: int = 0
-    amended: bool = False
+    # Status: "Original", "Droped", "Modified", "To Modified"
+    status: Literal["Og", "Dp", "Md", "ToMd"] = "Og"
 
     @property
     def compose(self):
@@ -119,20 +121,21 @@ class MsgManager:
             self.account_ids[flow] = account_id
 
     def amend(self):
-        self.m.amended = True
+        self.m.status = "ToMd"
 
-    def drop(self):
-        self.message.drop()
-
-    def apply(self):
-        self.message.content = self.m.compose
+    def apply(self, func):
+        func(self)
+        if self.m.status == "ToMd":
+            self.message.content = self.m.compose
+            self.m.status = "Md"
 
     def respond(self, data: dict = None):
         # drop request websocket message
-        self.drop()
+        self.message.drop()
+        self.m.status = "Dp"
 
         if not data:
-            data = dict()
+            data = {}
 
         oto = Tool.protoTypeOf(self.m.method, MsgType.Res)
 
@@ -182,7 +185,7 @@ class MsgManager:
 
 class Tool:
     def __init__(self) -> None:
-        self.mapResType = dict()
+        self.mapResType = {}
 
     def parse(self, flowid: str, content: bytes) -> Msg:
         msg_type = MsgType(content[0])

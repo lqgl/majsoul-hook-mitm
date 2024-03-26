@@ -31,6 +31,8 @@ mhm 使用 Proxinject 在雀魂客户端中注入 Socks5 代理
 
 - 雀魂网页端
 
+> 注: 以上平台均支持 **Akagi** ，但自动功能仅支持雀魂网页端。
+
 ## 使用方法
 
 安装配置 mhm 需求 Python >= 3.10
@@ -39,7 +41,6 @@ mhm 使用 Proxinject 在雀魂客户端中注入 Socks5 代理
 
 ```bash
 git clone https://github.com/lqgl/majsoul-hook-mitm.git && cd majsoul-hook-mitm
-
 ```
 
 配置国内镜像源（可选）
@@ -58,7 +59,7 @@ python -m playwright install chromium
 
 使用 Akagi
 
-> 到 [Discord](https://discord.gg/Z2wjXUK8bN) 下载 Akagi 提供的 bot.zip。 注: 网盘中除 v2 版本均可用，任选一个下载。解压获取 **mortal.pth** 文件，放置到 bot 文件夹中。
+> 到 [Discord](https://discord.gg/Z2wjXUK8bN) 下载由 Akagi 提供的`v4`版本的 bot.zip, 解压获取 **mortal.pth** 文件，放置到 bot 文件夹中。
 
 > 注: 3p 的 mortal.pth 及对应的 libriichi3p 文件需捐赠 Akagi 进行获取.
 
@@ -77,35 +78,43 @@ python -m mhm
 
 首次启动 mhm 会自动生成配置文件 mhmp.json
 
-可以编辑此文件以根据需求自定义设置，以下表格解释了 hook 可用的配置选项：
+可以编辑此文件以根据需求自定义设置，以下表格解释了 base 可用的配置选项：
 
 | 释义         | 键               | 可用值        |
 | ------------ | ---------------- | ------------- |
-| 启用全皮肤   | enable_skins     | true \| false |
-| 启用小助手   | enable_aider     | true \| false |
-| 启用伪寻觅   | enable_chest     | true \| false |
+| 启用全皮肤   | skins     | true \| false |
+| 启用小助手   | aider     | true \| false |
+| 启用伪寻觅   | chest     | true \| false |
 | 随机星标皮肤 | random_star_char | true \| false |
 
-以下表格解释了 autoNextGame 可用的配置选项：
+> 注: 小助手需要手动启动，建议先启动小助手，后启动 mhm。
+
+以下表格解释了 playwright 中 auto_next_args 可用的配置选项：
 
 | 释义           | 键                    | 可用值                                   |
 | -------------- | --------------------- | ---------------------------------------- |
-| 启用自动开下局 | enable_auto_next_game | true \| false                            |
 | 游戏段位场     | next_game_Rank        | copper \| silver \| gold \| jade \| king |
 | 游戏人数       | next_game_number      | 4p \| 3p                                 |
 | 游戏房间       | next_game_rounds      | south \| east                            |
 
 ### 有关代理模式
 
-mhm.json 中默认代理模式为 `"mode": ["regular"]`。
+mhmp.json 中默认代理模式为 `"mode": ["regular"]`。
 
-使用 steam 雀魂客户端, 修改为: `"mode": ["socks5"]`, `"proxinject": { "name": "jantama_mahjongsoul", "set-proxy": "127.0.0.1:7878"}`, 这里的 7878 端口是`mitm`监听的端口。
+#### 使用雀魂客户端
+
+需要将代理模式修改为: `"mode": ["socks5"]`, 并且修改proxinject为 `"enable": true`。
+
+#### 使用雀魂网页端
 
 网页加载慢可尝试使用上游代理，可以更改为 `"mode": ["upstream:http://127.0.0.1:7890/"]`, 示例为 clash 的 7890 端口。
+
+> 注：以上雀魂客户端代理模式与网页端的不通用，请按照自己的需求自行选择。
 
 ## 特别感谢
 
 - [Akagi](https://github.com/shinkuan/Akagi)
+- [majsoul-hook-mitm](https://github.com/anosora233/majsoul-hook-mitm)
 - [Avenshy](https://github.com/Avenshy/mahjong-helper-majsoul-mitmproxy)
 - [PragmaTwice](https://github.com/PragmaTwice/proxinject)
 - [747929791](https://github.com/747929791/majsoul_wrapper)
@@ -113,7 +122,7 @@ mhm.json 中默认代理模式为 `"mode": ["regular"]`。
 
 ## 更新内容说明
 
-本项目是 [majsoul-hook-mitm](https://github.com/anosora233/majsoul-hook-mitm) 和 [Akagi](https://github.com/shinkuan/Akagi) 的聚合版本。在 **majsoul-hook-mitm** 项目的基础上增加了对 **Akagi** 项目中 mortal 模型的支持与自动打牌功能支持，与 **Akagi** 项目中的不同是无美观好看的终端界面。
+本项目是 [majsoul-hook-mitm](https://github.com/anosora233/majsoul-hook-mitm) 和 [Akagi](https://github.com/shinkuan/Akagi) 的聚合版本。在 **majsoul-hook-mitm** 项目的基础上增加了对 **Akagi** 项目中 mortal 模型的支持与自动打牌功能支持。
 
 ## Discord 交流群
 

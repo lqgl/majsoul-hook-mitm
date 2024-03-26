@@ -1,8 +1,8 @@
 import random
 
-from mhm import resver
 from mhm.hook import Hook
 from mhm.proto import MsgManager, MsgType
+from mhm.resource import ResourceManager
 
 
 def rewards(mapChest: dict, count: int, id: int):
@@ -10,7 +10,7 @@ def rewards(mapChest: dict, count: int, id: int):
 
     if id not in mapChest:
         id = -999
-    for i in range(0, count):
+    for _i in range(0, count):
         aRandom, bRandom = random.random(), random.random()
         for (aPb, aPool), (bPb, bPool) in mapChest[id]:
             if aRandom < aPb:
@@ -27,11 +27,11 @@ def chest(mapChest: dict, count: int, id: int):
     }
 
 
-class OstHook(Hook):
-    def __init__(self) -> None:
+class EstHook(Hook):
+    def __init__(self, resger: ResourceManager) -> None:
         super().__init__()
 
-        aChars = [int(m) for m in resver.emotes]
+        aChars = [m["charid"] for m in resger.character_rows]
         nViews = sorted(set(range(305001, 305056)).difference({305043, 305047}))
         gGifts = sorted(range(303012, 303090, 10))
         bGifts = sorted(range(303013, 303090, 10))

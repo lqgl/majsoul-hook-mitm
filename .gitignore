@@ -163,6 +163,9 @@ cython_debug/
 log/
 account/
 /*.json
+/*.lnk
+/*.txt
+/*.lqbin
 
 # Embed python
 embed/

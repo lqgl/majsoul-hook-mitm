@@ -1,30 +1,29 @@
-import os
-import requests
+import socket
 
+import requests
 from urllib3 import disable_warnings
 from urllib3.exceptions import InsecureRequestWarning
-from socket import socket, AF_INET, SOCK_STREAM
 
-from mhm import pRoot
-from mhm.proto import MsgManager
+from mhm import console
 from mhm.hook import Hook
+from mhm.proto import MsgManager
 
 
 class DerHook(Hook):
     def __init__(self) -> None:
-        self.pool = dict()
-
+        self.pool = {}
         disable_warnings(InsecureRequestWarning)
 
-        self.path = pRoot / "common/endless/mahjong-helper"
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
+        if sock.connect_ex(("127.0.0.1", 12121)) == 0:
+            console.log("[green]Aider Detected")
+            self.open = True
+        else:
+            console.log("[red]No Aider Detected")
+            self.open = False
 
-    def hook(self, mger: MsgManager):
-        if mger.m.isReq():
-            return
-
-        if mger.member not in self.pool:
-            self.pool[mger.member] = Aider(self.path)
-
+    def send(self, mger: MsgManager):
         if mger.m.method == ".lq.ActionPrototype":
             if mger.data["name"] == "ActionNewRound":
                 mger.data["data"]["md5"] = mger.data["data"]["sha256"][:32]
@@ -36,20 +35,8 @@ class DerHook(Hook):
             send_msg = {"sync_game_actions": mger.data["game_restore"]["actions"]}
         else:
             send_msg = mger.data
+        requests.post("https://127.0.0.1:12121", json=send_msg, verify=0, timeout=1)
 
-        requests.post(self.pool[mger.member].api, json=send_msg, verify=0)
-
-
-class Aider:
-    PORT = 43410
-
-    def __init__(self, path: str) -> None:
-        with socket(AF_INET, SOCK_STREAM) as s:
-            s.settimeout(0.2)
-            if s.connect_ex(("127.0.0.1", Aider.PORT)) != 0:
-                cmd = f'start cmd /c "title Console · 🀄 && {path} -majsoul -p {Aider.PORT}"'
-                os.system(cmd)
-
-        self.api = f"https://127.0.0.1:{Aider.PORT}"
-
-        Aider.PORT += 1
+    def apply(self, mger: MsgManager):
+        if self.open and not mger.m.isReq():
+            self.send(mger)
