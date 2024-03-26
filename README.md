@@ -126,6 +126,6 @@ mhmp.json 中默认代理模式为 `"mode": ["regular"]`。
 
 ## Discord 交流群
 
-- [majsoul-hook-mitm](https://discord.gg/NTXFtuRK)
+- [majsoul-hook-mitm](https://discord.gg/7gdfT7AYWJ)
 
 - [Akagi](https://discord.gg/Z2wjXUK8bN)
