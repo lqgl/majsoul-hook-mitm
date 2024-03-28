@@ -13,6 +13,7 @@ SheetNames = Literal[
     "item_definition_skin",
     "item_definition_item",
     "character_emoji",
+    "chest_preview",
 ]
 
 
@@ -83,6 +84,10 @@ class ResourceManager:
         for row in self.sheets_table["item_definition_loading_image"]:
             self.item_rows.append(row["unlock_items"][0])
         self.bag_rows = [{"item_id": m, "stack": 1} for m in self.item_rows]
+
+        self.chest_map = defaultdict(lambda: defaultdict(list))
+        for row in self.sheets_table["chest_preview"]:
+            self.chest_map[row["chest_id"]][row["type"]].append(row["item_id"])
 
         self.title_rows = [m["id"] for m in self.sheets_table["item_definition_title"]]
         return self
