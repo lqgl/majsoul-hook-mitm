@@ -11,7 +11,7 @@ mitmdump: # mitmdump配置
     listen_host: 127.0.0.1  # 监听地址
     listen_port: 7878  # 监听端口
     mode:
-      - upstream:http://127.0.0.1:7890/  # 模式: 1.默认模式：regular 2.上游代理：upstream:http://127.0.0.1:7890/ （7890为clash端口）3.socks5模式: socks5 
+      - regular # 模式: 1.默认模式：regular 2.上游代理：upstream:http://127.0.0.1:7890/ （7890为clash端口）3.socks5模式: socks5 
   dump:
     with_dumper: false
     with_termlog: true
