@@ -1,4 +1,4 @@
-import json
+import yaml
 import random
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from pathlib import Path
@@ -10,7 +10,7 @@ from .resource import ResourceManager
 HOST = "https://game.maj-soul.com/1"
 ROOT = Path(".")
 
-CONFIG_PATH = ROOT / "mhmp.json"
+CONFIG_PATH = ROOT / "mhmp.yaml"  # 修改为 YAML 文件
 
 LQBIN_RKEY = "res/config/lqc.lqbin"
 LQBIN_VTXT = ROOT / "lqc.txt"
@@ -122,8 +122,6 @@ def load_resource() -> tuple[str, ResourceManager]:
 
 if CONFIG_PATH.exists():
     with CONFIG_PATH.open("r", encoding="utf-8") as f:
-        config = Config.fromdict(json.load(f))
+        config = Config.fromdict(yaml.safe_load(f))  # 从 YAML 文件中加载配置数据
 else:
     config = Config()
-with CONFIG_PATH.open("w", encoding="utf-8") as f:
-    json.dump(asdict(config), f, indent=2, ensure_ascii=False)
