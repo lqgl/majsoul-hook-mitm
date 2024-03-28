@@ -1,10 +1,10 @@
 base: # 基础配置
-  aider: false  # 是否启用小助手，true 启用，false 不启用
-  chest: false  # 是否启动本地寻觅，true 启用，false 不启用
+  aider: false  # 是否启用小助手，true 启用，false 关闭
+  chest: false  # 是否启动本地寻觅，true 启用，false 关闭
   debug: false  # 是否开启调试模式，true 开启，false 关闭
   no_cheering_emotes: true
-  random_star_char: false  # 是否启用随机星标皮肤，true 启用，false 不启用
-  skins: true  # 是否启用全皮肤，true 启用，false 不启用
+  random_star_char: false  # 是否启用随机星标皮肤，true 启用，false 关闭
+  skins: true  # 是否启用全皮肤，true 启用，false 关闭
 mitmdump: # mitmdump配置
   args:
     http2: false # 是否启用http2
@@ -16,18 +16,18 @@ mitmdump: # mitmdump配置
     with_dumper: false
     with_termlog: true
 playwright: # playwright配置
-  enable: true  # 是否启用playwright，true 启用，false 不启用
+  enable: true  # 是否启用playwright，true 启用，false 关闭
   args:
+    width: 1280  # 窗口宽度 注：宽高比要为16:9
     height: 720  # 窗口高度
-    moqiedelay: true # 是否启用出牌延迟
-    width: 1280  # 窗口宽度 注：要为16:9
-  auto_emotion: false  # 50% 概率响应表情，仅支持一姬， true 启用，false 不启用
+    moqiedelay: true # 是否启用优化出牌延迟
+  auto_emotion: false  # 50% 概率响应表情，仅支持一姬， true 启用，false 关闭
   auto_next_args:  # 自动下一局参数
     next_game_Rank: gold  # 可选 copper｜silver｜gold｜jade｜king
     next_game_number: 4p  # 可选 3p｜4p
     next_game_rounds: south  # 可选 east｜south
 proxinject: # proxinject配置
-  enable: false  # 是否启用proxinject，true 启用，false 不启用，用于雀魂客户端，该选项开启时，mitmdump模式需改为socks5，且关闭playwright
+  enable: false  # 是否启用proxinject，true 启用，false 关闭，用于雀魂客户端，该选项开启时，mitmdump模式需改为socks5，且关闭playwright
   args:
     name: jantama_mahjongsoul  # 雀魂客户端进程名
     set-proxy: 127.0.0.1:7878  # 7878是mitmdump监听地址
