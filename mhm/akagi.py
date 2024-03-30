@@ -9,6 +9,7 @@ from textual.widgets import (Button, Checkbox, Footer, Header, Input, Label,
                              LoadingIndicator, Log, Markdown, Pretty, Rule,
                              Static)
 import json
+import random
 from .action import Action
 from .majsoul2mjai import MajsoulBridge
 from .addons import get_messages,get_activated_flows
@@ -199,6 +200,9 @@ class FlowScreen(Screen):
             bridge = self.app.bridge[self.flow_id]
             self.app.mjai_msg_dict[self.flow_id][-1]['meta'] = meta_to_recommend(self.app.mjai_msg_dict[self.flow_id][-1]['meta'], bridge.is_3p)
             latest_mjai_msg = self.app.mjai_msg_dict[self.flow_id][-1]
+            # Lose weight
+            if config.playwright.lose_weight and latest_mjai_msg is not None:
+                latest_mjai_msg = self.lose_weight(latest_mjai_msg)
             # Update tehai
             player_state = bridge.mjai_client.bot.state()
             tehai, tsumohai = state_to_tehai(player_state)
@@ -266,6 +270,27 @@ class FlowScreen(Screen):
         AUTOPLAY = event.value
         pass
 
+    def lose_weight(self, mjai_msg):
+        # 暂时只处理打牌降重，感谢 hhsuki提供的降重方案
+        if mjai_msg["type"] == "dahai":
+            # 分离选项和权重
+            choices = []
+            weights = []
+            for data in mjai_msg["meta"]:
+                if data[1] >= 0.15:  # 只保留权重大于或等于 0.15 的选项
+                    choices.append(data[0])
+                    weights.append(data[1])
+            # 进行加权随机选择
+            if choices:
+                pai = random.choices(choices, weights=weights, k=1)[0]
+                if mjai_msg['pai'] != pai:
+                    mjai_msg['substitution'] = f"{mjai_msg['pai']} -> {pai}"
+                    mjai_msg['lose_weight'] = True
+                else:
+                    mjai_msg['lose_weight'] = False
+                mjai_msg['pai'] = pai 
+        return mjai_msg
+    
     def stop_dahai_verification(self) -> None:
         if self.dahai_verfication_job is not None:
             self.dahai_verfication_job.stop()

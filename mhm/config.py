@@ -65,6 +65,7 @@ class Config:
                 "next_game_rounds": "south"
             }
         )
+        lose_weight: bool = False
         auto_emotion: bool = False
         
     base: Base = field(default_factory=lambda: Config.Base())
