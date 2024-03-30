@@ -24,6 +24,14 @@ ENABLEPLAYWRIGHT = False
 AUTOPLAY = False
 AUTONEXT = False
 
+TILES = [
+    "1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m",
+    "1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p",
+    "1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s",
+    "E",  "S",  "W",  "N",  "P",  "F",  "C",
+    '5mr', '5pr', '5sr'
+]
+
 def get_game_msgs():
     return game_msgs
 
@@ -277,7 +285,7 @@ class FlowScreen(Screen):
             choices = []
             weights = []
             for data in mjai_msg["meta"]:
-                if data[1] >= 0.15:  # 只保留权重大于或等于 0.15 的选项
+                if data[0] in TILES and data[1] >= 0.15:  # 只保留权重大于或等于 0.15 的选项
                     choices.append(data[0])
                     weights.append(data[1])
             # 进行加权随机选择
@@ -289,6 +297,7 @@ class FlowScreen(Screen):
                 else:
                     mjai_msg['lose_weight'] = False
                 mjai_msg['pai'] = pai 
+                logger.debug(f"lose weight: {mjai_msg}, tehai:{self.tehai} tsumohai:{self.tsumohai}")
         return mjai_msg
     
     def stop_dahai_verification(self) -> None:
