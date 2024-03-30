@@ -155,7 +155,8 @@ class FlowScreen(Screen):
             self.game_log_container.scroll_end(animate=False)
             self.gm_msg_idx += 1
             gm_msg = self.app.gm_msg_dict[self.flow_id][-1]
-            # logger.debug(f"gm_msg:{gm_msg}")
+            if gm_msg['method'] != '.lq.FastTest.checkNetworkDelay':
+                logger.debug(f"gm_msg:{gm_msg}")
             global game_msgs
             if gm_msg['type'] == MsgType.Notify:
                 # 操作通知
@@ -207,10 +208,10 @@ class FlowScreen(Screen):
         if self.mjai_msg_idx < len(self.app.mjai_msg_dict[self.flow_id]):
             bridge = self.app.bridge[self.flow_id]
             self.app.mjai_msg_dict[self.flow_id][-1]['meta'] = meta_to_recommend(self.app.mjai_msg_dict[self.flow_id][-1]['meta'], bridge.is_3p)
-            latest_mjai_msg = self.app.mjai_msg_dict[self.flow_id][-1]
             # Lose weight
-            if config.playwright.lose_weight and latest_mjai_msg is not None:
-                latest_mjai_msg = self.lose_weight(latest_mjai_msg)
+            if config.playwright.lose_weight:
+                self.lose_weight()
+            latest_mjai_msg = self.app.mjai_msg_dict[self.flow_id][-1]
             # Update tehai
             player_state = bridge.mjai_client.bot.state()
             tehai, tsumohai = state_to_tehai(player_state)
@@ -278,27 +279,26 @@ class FlowScreen(Screen):
         AUTOPLAY = event.value
         pass
 
-    def lose_weight(self, mjai_msg):
+    def lose_weight(self):
         # 暂时只处理打牌降重，感谢 hhsuki提供的降重方案
-        if mjai_msg["type"] == "dahai":
+        if self.app.mjai_msg_dict[self.flow_id][-1]["type"] == "dahai":
             # 分离选项和权重
             choices = []
             weights = []
-            for data in mjai_msg["meta"]:
+            for data in self.app.mjai_msg_dict[self.flow_id][-1]["meta"]:
                 if data[0] in TILES and data[1] >= 0.15:  # 只保留权重大于或等于 0.15 的选项
                     choices.append(data[0])
                     weights.append(data[1])
             # 进行加权随机选择
             if choices:
                 pai = random.choices(choices, weights=weights, k=1)[0]
-                if mjai_msg['pai'] != pai:
-                    mjai_msg['substitution'] = f"{mjai_msg['pai']} -> {pai}"
-                    mjai_msg['lose_weight'] = True
+                if self.app.mjai_msg_dict[self.flow_id][-1]['pai'] != pai:
+                    self.app.mjai_msg_dict[self.flow_id][-1]['substitution'] = f"{self.app.mjai_msg_dict[self.flow_id][-1]['pai']} -> {pai}"
+                    self.app.mjai_msg_dict[self.flow_id][-1]['lose_weight'] = True
                 else:
-                    mjai_msg['lose_weight'] = False
-                mjai_msg['pai'] = pai 
-                logger.debug(f"lose weight: {mjai_msg}, tehai:{self.tehai} tsumohai:{self.tsumohai}")
-        return mjai_msg
+                    self.app.mjai_msg_dict[self.flow_id][-1]['lose_weight'] = False
+                self.app.mjai_msg_dict[self.flow_id][-1]['pai'] = pai 
+                logger.debug(f"lose weight: {self.app.mjai_msg_dict[self.flow_id][-1]}, tehai:{self.tehai} tsumohai:{self.tsumohai}")
     
     def stop_dahai_verification(self) -> None:
         if self.dahai_verfication_job is not None:
