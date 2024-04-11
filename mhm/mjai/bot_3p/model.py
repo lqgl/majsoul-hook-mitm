@@ -1,3 +1,6 @@
+import json
+import gzip
+import requests
 import numpy as np
 import torch
 import pathlib
@@ -251,6 +254,9 @@ class MortalEngine:
         boltzmann_epsilon = 0,
         boltzmann_temp = 1,
         top_p = 1,
+        online = False,
+        api_key = None,
+        server = None,
     ):
         self.engine_type = 'mortal'
         self.device = device or torch.device('cpu')
@@ -270,7 +276,40 @@ class MortalEngine:
         self.boltzmann_temp = boltzmann_temp
         self.top_p = top_p
 
+        self.online = online
+        self.api_key = api_key
+        self.server = server
+        if self.online:
+            assert self.version == 4, 'To use online, local model version must be 4'
+
     def react_batch(self, obs, masks, invisible_obs):
+        if self.online:
+            global online_valid
+            try:
+                list_obs = [o.tolist() for o in obs]
+                list_masks = [m.tolist() for m in masks]
+                post_data = {
+                    'obs': list_obs,
+                    'masks': list_masks,
+                }
+                data = json.dumps(post_data, separators=(',', ':'))
+                compressed_data = gzip.compress(data.encode('utf-8'))
+                headers = {
+                    'Authorization': self.api_key,
+                    'Content-Encoding': 'gzip',
+                }
+                r = requests.post(f'{self.server}/react_batch_3p',
+                    headers=headers,
+                    data=compressed_data,
+                    timeout=2)
+                assert r.status_code == 200
+                online_valid = True
+                r_json = r.json()
+                return r_json['actions'], r_json['q_out'], r_json['masks'], r_json['is_greedy']
+            except:
+                online_valid = False
+                pass
+
         with (
             torch.autocast(self.device.type, enabled=self.enable_amp),
             torch.no_grad(),
@@ -321,8 +360,7 @@ def sample_top_p(logits, p):
     sampled = probs_idx.gather(-1, probs_sort.multinomial(1)).squeeze(-1)
     return sampled
 
-def load_model(seat: int) -> Bot:
-
+def get_engine() -> MortalEngine:
     # check if GPU is available
     if torch.cuda.is_available():
         device = torch.device('cuda')
@@ -344,6 +382,12 @@ def load_model(seat: int) -> Bot:
     mortal.load_state_dict(state['mortal'])
     dqn.load_state_dict(state['current_dqn'])
 
+    with open(pathlib.Path(__file__).parent.parent / 'online.json', 'r') as f:
+        json_load = json.load(f)
+        server = json_load['server']
+        online = json_load['online']
+        api_key = json_load['api_key']
+
     engine = MortalEngine(
         mortal,
         dqn,
@@ -353,8 +397,17 @@ def load_model(seat: int) -> Bot:
         enable_quick_eval = False,
         enable_rule_based_agari_guard = True,
         name = 'mortal',
-        version= state['config']['control']['version']
+        version= state['config']['control']['version'],
+        online = online,
+        api_key = api_key,
+        server = server,
     )
+
+    return engine
+
+def load_model(seat: int) -> Bot:
+
+    engine = get_engine()
 
     bot = Bot(engine, seat)
     return bot
