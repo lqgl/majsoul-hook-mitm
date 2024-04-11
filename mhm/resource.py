@@ -21,10 +21,11 @@ class ResourceManager:
     RENAME_SCROLL = 302013
     VIEW_CATEGORY = 5
 
-    def __init__(self, lqbin: bytes, no_cheering_emotes: bool) -> None:
+    def __init__(self, lqbin: bytes, version: str, no_cheering_emotes) -> None:
         self.no_cheering_emotes = no_cheering_emotes
         self.sheets_table: dict[SheetNames, list] = defaultdict(list)
-
+        self.version = version
+        
         config_table = config_pb2.ConfigTables()
         config_table.ParseFromString(lqbin)
 
