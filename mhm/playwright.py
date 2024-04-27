@@ -63,8 +63,6 @@ def auto_next(page, scale, parse_msg):
         # 2.最终顺位界面点击"确认"
         xy_scale = {"x": LOCATION['endGameStage'][0][0] * scale,
                     "y": LOCATION['endGameStage'][0][1] * scale}
-        page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
-        time.sleep(1)
         page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
         time.sleep(5)
 
@@ -91,13 +89,21 @@ def auto_next(page, scale, parse_msg):
 
         # 6. 每日任务界面点击"确认"
         page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+        time.sleep(5)
+        # 第二页每日任务，任务数多于3时会出现
+        page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+        time.sleep(2)
+
+        # 7. 限定活动道具
+        page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+        time.sleep(2)
+        # 8. 限定活动道具界面点击"确认"
+        page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
         time.sleep(8)
 
-        # 7. 大厅界面点击段位场
+        # 9. 大厅界面点击段位场
         xy_scale = {"x": LOCATION['endGameStage'][2][0] * scale,
                     "y": LOCATION['endGameStage'][2][1] * scale}
-        page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
-        time.sleep(0.5)
         page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
         logger.debug(f"page_clicker_next_game: {xy_scale}")
         time.sleep(2)
