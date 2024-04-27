@@ -70,17 +70,22 @@ def auto_next(page, scale, parse_msg):
         page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
         time.sleep(10)
 
-        # 4. 开启宝匣礼物
-        xy_scale = {"x": LOCATION['endGameStage'][1][0] * scale,
-                    "y": LOCATION['endGameStage'][1][1] * scale}
-        page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
-        time.sleep(5)
+        if config.playwright.auto_next_args.get('next_game_Rank') != 'copper':
+            # 4. 开启宝匣礼物
+            xy_scale = {"x": LOCATION['endGameStage'][1][0] * scale,
+                        "y": LOCATION['endGameStage'][1][1] * scale}
+            page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+            time.sleep(1)
+            page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+            time.sleep(5)
 
-        # 5. 宝匣好感度界面点击"确认"
-        xy_scale = {"x": LOCATION['endGameStage'][0][0] * scale,
-                    "y": LOCATION['endGameStage'][0][1] * scale}
-        page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
-        time.sleep(5)
+            # 5. 宝匣好感度界面点击"确认"
+            xy_scale = {"x": LOCATION['endGameStage'][0][0] * scale,
+                        "y": LOCATION['endGameStage'][0][1] * scale}
+            page.mouse.move(x=xy_scale["x"], y=xy_scale["y"])
+            time.sleep(1)
+            page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)
+            time.sleep(5)
 
         # 6. 每日任务界面点击"确认"
         page.mouse.click(x=xy_scale["x"], y=xy_scale["y"], delay=100)

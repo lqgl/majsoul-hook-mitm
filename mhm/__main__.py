@@ -34,8 +34,8 @@ def main():
     logger.info(f"Debug: {config.base.debug}")
     logger.info("Load Resource")
     with console.status("[magenta]Fetch LQC.LQBIN"):
-        qbin_version, resger = load_resource()
-    logger.info(f"LQBin Version: [cyan3]{qbin_version}")
+        resger = load_resource(config.base.no_cheering_emotes)
+    console.log(f"LQBin Version: [cyan3]{resger.version}")
     logger.info(f"> {len(resger.item_rows):0>3} items")
     logger.info(f"> {len(resger.title_rows):0>3} titles")
     logger.info(f"> {len(resger.character_rows):0>3} characters")

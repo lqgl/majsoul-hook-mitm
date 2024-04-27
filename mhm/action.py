@@ -322,8 +322,11 @@ class Action:
                     delay_time = random.uniform(1.9, 2.8)
             return delay_time
         if mtype in ['none', 'chi', 'pon', 'daiminkan', 'ankan', 'kakan', 'hora', 'reach', 'ryukyoku', 'nukidora']:
-            if self.isNewRound and mtype == "nukidora":
-                delay_time = 3.75
+            if mtype == "nukidora":
+                if self.isNewRound:
+                    delay_time = 3.75
+                else:
+                    delay_time = 1.0
             elif mtype == "none":
                 delay_time = 1.5
             else:
