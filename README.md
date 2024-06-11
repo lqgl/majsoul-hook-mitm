@@ -118,10 +118,6 @@ mhmp.json 中默认代理模式为 `"mode": ["regular"]`。
 - [747929791](https://github.com/747929791/majsoul_wrapper)
 - [EndlessCheng](https://github.com/EndlessCheng/mahjong-helper)
 
-## 更新内容说明
-
-本项目是 [majsoul-hook-mitm](https://github.com/anosora233/majsoul-hook-mitm) 和 [Akagi](https://github.com/shinkuan/Akagi) 的聚合版本。在 **majsoul-hook-mitm** 项目的基础上增加了对 **Akagi** 项目中 mortal 模型的支持与自动打牌功能支持。
-
 ## Discord 交流群
 
 - [majsoul-hook-mitm](https://discord.gg/7gdfT7AYWJ)
