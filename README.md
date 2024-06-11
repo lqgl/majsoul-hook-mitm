@@ -11,7 +11,6 @@ mhm 使用 Proxinject 在雀魂客户端中注入 Socks5 代理
 - [ ] 本地昵称
 - [ ] 本地寻觅
 - [x] 随机星标皮肤
-- [x] 支持[Akagi](https://github.com/shinkuan/Akagi)
 - [x] 自动打牌
 - [x] 自动开下局
 
@@ -31,7 +30,7 @@ mhm 使用 Proxinject 在雀魂客户端中注入 Socks5 代理
 
 - 雀魂网页端
 
-> 注: 以上平台均支持 **Akagi** ，但自动功能仅支持雀魂网页端。
+> 注: 自动功能仅支持雀魂网页端。
 
 ## 使用方法
 
@@ -112,8 +111,8 @@ mhmp.json 中默认代理模式为 `"mode": ["regular"]`。
 
 ## 特别感谢
 
-- [Akagi](https://github.com/shinkuan/Akagi)
 - [majsoul-hook-mitm](https://github.com/anosora233/majsoul-hook-mitm)
+- [Akagi](https://github.com/shinkuan/Akagi)
 - [Avenshy](https://github.com/Avenshy/mahjong-helper-majsoul-mitmproxy)
 - [PragmaTwice](https://github.com/PragmaTwice/proxinject)
 - [747929791](https://github.com/747929791/majsoul_wrapper)
