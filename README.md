@@ -57,11 +57,10 @@ python -m pip install -r requirements.txt
 python -m playwright install chromium
 ```
 
-使用 Akagi
+免费模型
 
-> 到 [Discord](https://discord.gg/Z2wjXUK8bN) 下载由 Akagi 提供的`v4`版本的 bot.zip, 解压获取 **mortal.pth** 文件，放置到 bot 文件夹中。
-
-> 注: 3p 的 mortal.pth 及对应的 libriichi3p 文件需捐赠 Akagi 进行获取.
+- 加入[Discord](https://discord.gg/7gdfT7AYWJ)
+- 使用release
 
 启动 mhm
 
@@ -127,5 +126,4 @@ mhmp.json 中默认代理模式为 `"mode": ["regular"]`。
 ## Discord 交流群
 
 - [majsoul-hook-mitm](https://discord.gg/7gdfT7AYWJ)
-
-- [Akagi](https://discord.gg/Z2wjXUK8bN)
+  
