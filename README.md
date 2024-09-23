@@ -45,26 +45,32 @@ git clone https://github.com/lqgl/majsoul-hook-mitm.git && cd majsoul-hook-mitm
 配置国内镜像源（可选）
 
 ```bash
-python -m pip config set global.index-url https://mirror.nju.edu.cn/pypi/web/simple
+pip config set global.index-url https://mirror.nju.edu.cn/pypi/web/simple
+```
+
+创建虚拟环境
+
+```MacOS
+python -m venv venv
+source venv/bin/activate
 ```
 
 安装依赖
 
 ```bash
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-python -m playwright install chromium
+pip install --upgrade pip
+pip install -r requirements.txt
+playwright install chromium
 ```
 
 免费模型
 
 - 加入[Discord](https://discord.gg/7gdfT7AYWJ)
-- 使用release
 
 启动 mhm
 
 ```bash
-python -m mhm
+python main.py
 ```
 
 安装 mitmproxy 证书
@@ -74,7 +80,7 @@ python -m mhm
 
 ## 配置文件
 
-首次启动 mhm 会自动生成配置文件 mhmp.json
+首次启动 mhm 会自动生成配置文件 mhmp.yaml
 
 可以编辑此文件以根据需求自定义设置，以下表格解释了 base 可用的配置选项：
 
