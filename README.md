@@ -50,9 +50,25 @@ pip config set global.index-url https://mirror.nju.edu.cn/pypi/web/simple
 
 创建虚拟环境
 
-```MacOS
+```bash
 python -m venv venv
+```
+
+激活虚拟环境
+
+MacOS
+```bash
 source venv/bin/activate
+```
+
+Windows
+```bash
+venv\Scripts\activate
+```
+
+退出虚拟环境
+```
+deactivate
 ```
 
 安装依赖
