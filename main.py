@@ -1,27 +1,27 @@
 import asyncio, threading, time
 
-from . import console
-from .common import start_inject, start_proxy
-from .config import config, load_resource
-from .hook import Hook
-from .resource import ResourceManager
+from mhm import console
+from mhm.common import start_inject, start_proxy
+from mhm.config import config, load_resource
+from mhm.hook import Hook
+from mhm.resource import ResourceManager
+from mhm.akagi import Akagi
+from mhm.playwright import start_playwright
 from loguru import logger
-from .playwright import start_playwright
-from .akagi import Akagi
 
 
 def create_hooks(resger: ResourceManager) -> list[Hook]:
     hooks = []
     if config.base.aider:
-        from .hook.aider import DerHook
+        from mhm.hook.aider import DerHook
 
         hooks.append(DerHook())
     if config.base.chest:
-        from .hook.chest import EstHook
+        from mhm.hook.chest import EstHook
 
         hooks.append(EstHook(resger))
     if config.base.skins:
-        from .hook.skins import KinHook
+        from mhm.hook.skins import KinHook
 
         hooks.append(KinHook(resger))
     return hooks
@@ -30,7 +30,7 @@ def create_hooks(resger: ResourceManager) -> list[Hook]:
 def main():
     # 日志设定
     logger.remove(handler_id=None)
-    logger.add("akagi.log", level = "DEBUG")
+    logger.add("mhm.log", level = "DEBUG")
     logger.info(f"Debug: {config.base.debug}")
     logger.info("Load Resource")
     with console.status("[magenta]Fetch LQC.LQBIN"):
