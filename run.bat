@@ -13,6 +13,9 @@ if %ERRORLEVEL% EQU 0 (
     )
 )
 
+:: Get system language
+for /f "tokens=2 delims==" %%a in ('wmic os get oslanguage /value') do set "LANG=%%a"
+
 :: Color definitions
 if defined WT_SESSION (
     :: Use PowerShell for colored output in Windows Terminal
@@ -30,11 +33,19 @@ if defined WT_SESSION (
 
 echo.
 if defined WT_SESSION (
-    %PRINT_GREEN% "==== 项目启动脚本 ===="
+    if "%LANG%"=="2052" (
+        %PRINT_GREEN% "==== 项目启动脚本 ===="
+    ) else (
+        %PRINT_GREEN% "==== Project Startup Script ===="
+    )
     %PRINTLN%
 ) else (
     %GREEN%
-    echo ==== 项目启动脚本 ====
+    if "%LANG%"=="2052" (
+        echo ==== 项目启动脚本 ====
+    ) else (
+        echo ==== Project Startup Script ====
+    )
     %WHITE%
 )
 
@@ -42,48 +53,75 @@ if defined WT_SESSION (
 where python >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     if defined WT_SESSION (
-        %PRINT_RED% "错误: 系统未检测到 Python。请先安装 Python 3.10 或更高版本。"
+        if "%LANG%"=="2052" (
+            %PRINT_RED% "错误: 系统未检测到 Python。请先安装 Python 3.10。"
+        ) else (
+            %PRINT_RED% "Error: Python not found. Please install Python 3.10 first."
+        )
         %PRINTLN%
     ) else (
         %RED%
-        echo 错误: 系统未检测到 Python。请先安装 Python 3.10 或更高版本。
+        if "%LANG%"=="2052" (
+            echo 错误: 系统未检测到 Python。请先安装 Python 3.10。
+        ) else (
+            echo Error: Python not found. Please install Python 3.10 first.
+        )
         %WHITE%
     )
     exit /b 1
 )
 
 :: Get Python version
-for /f "tokens=1,2,3 delims=. " %%a in ('python -V 2^>^&1') do (
+for /f "tokens=1,2,3,4 delims=. " %%a in ('python -V 2^>^&1') do (
     set "PYTHON_MAJOR=%%b"
     set "PYTHON_MINOR=%%c"
+    set "PYTHON_MICRO=%%d"
 )
 
-echo Python版本: !PYTHON_MAJOR!.!PYTHON_MINOR!
+if "%LANG%"=="2052" (
+    echo Python版本: !PYTHON_MAJOR!.!PYTHON_MINOR!.!PYTHON_MICRO!
+) else (
+    echo Python version: !PYTHON_MAJOR!.!PYTHON_MINOR!.!PYTHON_MICRO!
+)
 
 :: Version check
-if !PYTHON_MAJOR! LSS 3 (
+if !PYTHON_MAJOR! NEQ 3 (
     if defined WT_SESSION (
-        %PRINT_RED% "错误: Python 版本必须 >= 3.10，但当前版本是 !PYTHON_MAJOR!.!PYTHON_MINOR!"
+        if "%LANG%"=="2052" (
+            %PRINT_RED% "错误: Python 版本必须为 3.10，但当前版本是 !PYTHON_MAJOR!.!PYTHON_MINOR!.!PYTHON_MICRO!"
+        ) else (
+            %PRINT_RED% "Error: Python version must be 3.10, but got !PYTHON_MAJOR!.!PYTHON_MINOR!.!PYTHON_MICRO!"
+        )
         %PRINTLN%
     ) else (
         %RED%
-        echo 错误: Python 版本必须 >= 3.10，但当前版本是 !PYTHON_MAJOR!.!PYTHON_MINOR!
+        if "%LANG%"=="2052" (
+            echo 错误: Python 版本必须为 3.10，但当前版本是 !PYTHON_MAJOR!.!PYTHON_MINOR!.!PYTHON_MICRO!
+        ) else (
+            echo Error: Python version must be 3.10, but got !PYTHON_MAJOR!.!PYTHON_MINOR!.!PYTHON_MICRO!
+        )
         %WHITE%
     )
     exit /b 1
 )
-if !PYTHON_MAJOR! EQU 3 (
-    if !PYTHON_MINOR! LSS 10 (
-        if defined WT_SESSION (
-            %PRINT_RED% "错误: Python 版本必须 >= 3.10，但当前版本是 !PYTHON_MAJOR!.!PYTHON_MINOR!"
-            %PRINTLN%
+if !PYTHON_MINOR! NEQ 10 (
+    if defined WT_SESSION (
+        if "%LANG%"=="2052" (
+            %PRINT_RED% "错误: Python 版本必须为 3.10，但当前版本是 !PYTHON_MAJOR!.!PYTHON_MINOR!"
         ) else (
-            %RED%
-            echo 错误: Python 版本必须 >= 3.10，但当前版本是 !PYTHON_MAJOR!.!PYTHON_MINOR!
-            %WHITE%
+            %PRINT_RED% "Error: Python version must be 3.10, but got !PYTHON_MAJOR!.!PYTHON_MINOR!"
         )
-        exit /b 1
+        %PRINTLN%
+    ) else (
+        %RED%
+        if "%LANG%"=="2052" (
+            echo 错误: Python 版本必须为 3.10，但当前版本是 !PYTHON_MAJOR!.!PYTHON_MINOR!
+        ) else (
+            echo Error: Python version must be 3.10, but got !PYTHON_MAJOR!.!PYTHON_MINOR!
+        )
+        %WHITE%
     )
+    exit /b 1
 )
 
 :: Check virtual environment
