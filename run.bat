@@ -1,79 +1,228 @@
 @echo off
-:: 设置颜色
-set RED=0C
-set GREEN=0A
-set YELLOW=0E
-set NC=0F
+:: Set UTF-8
+chcp 65001 > nul
+setlocal EnableDelayedExpansion
+
+:: Check if Windows Terminal is installed and restart script with it
+where wt.exe >nul 2>nul
+if %ERRORLEVEL% EQU 0 (
+    :: Check if not already running in Windows Terminal
+    if not defined WT_SESSION (
+        wt -p "Command Prompt" "%~f0"
+        exit /b
+    )
+)
+
+:: Color definitions
+if defined WT_SESSION (
+    :: Use PowerShell for colored output in Windows Terminal
+    set "PRINT_GREEN=powershell Write-Host -NoNewline -ForegroundColor Green"
+    set "PRINT_RED=powershell Write-Host -NoNewline -ForegroundColor Red"
+    set "PRINT_YELLOW=powershell Write-Host -NoNewline -ForegroundColor Yellow"
+    set "PRINTLN=echo."
+) else (
+    :: Use traditional colors in CMD
+    set "GREEN=color 0a"
+    set "RED=color 0c"
+    set "YELLOW=color 0e"
+    set "WHITE=color 07"
+)
 
 echo.
-echo %GREEN%==== 项目启动脚本 ====%NC%
+if defined WT_SESSION (
+    %PRINT_GREEN% "==== 项目启动脚本 ===="
+    %PRINTLN%
+) else (
+    %GREEN%
+    echo ==== 项目启动脚本 ====
+    %WHITE%
+)
 
-:: 获取 Python 解释器路径
-for /f "delims=" %%i in ('where python') do set PYTHON=%%i
-echo %PYTHON%
-
-:: 检查是否安装了 Python
-if "%PYTHON%"=="" (
-    echo %RED%错误: 系统未检测到 Python。请先安装 Python 3.10 或更高版本。%NC%
+:: Check Python installation
+where python >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    if defined WT_SESSION (
+        %PRINT_RED% "错误: 系统未检测到 Python。请先安装 Python 3.10 或更高版本。"
+        %PRINTLN%
+    ) else (
+        %RED%
+        echo 错误: 系统未检测到 Python。请先安装 Python 3.10 或更高版本。
+        %WHITE%
+    )
     exit /b 1
 )
 
-:: 检查 Python 版本是否 >= 3.10
-for /f "tokens=2 delims= " %%v in ('%PYTHON% --version') do set PYTHON_VERSION=%%v
-echo Python版本: %PYTHON_VERSION%
-
-:: 版本检查
-echo %PYTHON_VERSION% | findstr /R "^3\.1[0-9]\|^3\.2[0-9]\|^3\.3[0-9]\|^3\.4[0-9]\|^3\.5[0-9]\|^3\.6[0-9]\|^3\.7[0-9]\|^3\.8[0-9]\|^3\.9[0-9]\|^3\.1[0-9][0-9]$" >nul
-if errorlevel 1 (
-    echo %RED%错误: Python 版本必须 >= 3.10，但当前版本是 %PYTHON_VERSION%。%NC%
-    exit /b 1
+:: Get Python version
+for /f "tokens=1,2,3 delims=. " %%a in ('python -V 2^>^&1') do (
+    set "PYTHON_MAJOR=%%b"
+    set "PYTHON_MINOR=%%c"
 )
 
-:: 检查是否存在虚拟环境
+echo Python版本: !PYTHON_MAJOR!.!PYTHON_MINOR!
+
+:: Version check
+if !PYTHON_MAJOR! LSS 3 (
+    if defined WT_SESSION (
+        %PRINT_RED% "错误: Python 版本必须 >= 3.10，但当前版本是 !PYTHON_MAJOR!.!PYTHON_MINOR!"
+        %PRINTLN%
+    ) else (
+        %RED%
+        echo 错误: Python 版本必须 >= 3.10，但当前版本是 !PYTHON_MAJOR!.!PYTHON_MINOR!
+        %WHITE%
+    )
+    exit /b 1
+)
+if !PYTHON_MAJOR! EQU 3 (
+    if !PYTHON_MINOR! LSS 10 (
+        if defined WT_SESSION (
+            %PRINT_RED% "错误: Python 版本必须 >= 3.10，但当前版本是 !PYTHON_MAJOR!.!PYTHON_MINOR!"
+            %PRINTLN%
+        ) else (
+            %RED%
+            echo 错误: Python 版本必须 >= 3.10，但当前版本是 !PYTHON_MAJOR!.!PYTHON_MINOR!
+            %WHITE%
+        )
+        exit /b 1
+    )
+)
+
+:: Check virtual environment
 if exist "venv" (
-    echo %YELLOW%虚拟环境已存在，直接激活并启动...%NC%
+    if defined WT_SESSION (
+        %PRINT_YELLOW% "虚拟环境已存在，直接激活并启动..."
+        %PRINTLN%
+    ) else (
+        %YELLOW%
+        echo 虚拟环境已存在，直接激活并启动...
+        %WHITE%
+    )
     call venv\Scripts\activate
 ) else (
-    echo %YELLOW%虚拟环境不存在，创建中...%NC%
-    %PYTHON% -m venv venv
+    if defined WT_SESSION (
+        %PRINT_YELLOW% "虚拟环境不存在，创建中..."
+        %PRINTLN%
+    ) else (
+        %YELLOW%
+        echo 虚拟环境不存在，创建中...
+        %WHITE%
+    )
+    python -m venv venv
     if errorlevel 1 (
-        echo %RED%虚拟环境创建失败。请检查 Python 安装是否正确。%NC%
+        if defined WT_SESSION (
+            %PRINT_RED% "虚拟环境创建失败。请检查 Python 安装是否正确。"
+            %PRINTLN%
+        ) else (
+            %RED%
+            echo 虚拟环境创建失败。请检查 Python 安装是否正确。
+            %WHITE%
+        )
         exit /b 1
     )
     call venv\Scripts\activate
 
-    :: 检查并设置国内镜像源 (可选)
-    set /p use_mirror="是否配置国内镜像源？[y/n] "
-    if /i "%use_mirror%"=="y" (
-        echo %YELLOW%正在配置国内镜像源...%NC%
+    :: Mirror configuration
+    choice /c yn /m "是否配置国内镜像源？"
+    if !ERRORLEVEL! EQU 1 (
+        if defined WT_SESSION (
+            %PRINT_YELLOW% "正在配置国内镜像源..."
+            %PRINTLN%
+        ) else (
+            %YELLOW%
+            echo 正在配置国内镜像源...
+            %WHITE%
+        )
         pip config set global.index-url https://mirror.nju.edu.cn/pypi/web/simple
     ) else (
-        echo %YELLOW%跳过镜像源配置%NC%
+        if defined WT_SESSION (
+            %PRINT_YELLOW% "跳过镜像源配置"
+            %PRINTLN%
+        ) else (
+            %YELLOW%
+            echo 跳过镜像源配置
+            %WHITE%
+        )
     )
 
-    :: 升级pip
-    echo %YELLOW%升级pip...%NC%
-    pip install --upgrade pip
+    :: Upgrade pip
+    if defined WT_SESSION (
+        %PRINT_YELLOW% "升级pip..."
+        %PRINTLN%
+    ) else (
+        %YELLOW%
+        echo 升级pip...
+        %WHITE%
+    )
+    python -m pip install --upgrade pip
 
-    :: 安装项目依赖
+    :: Install dependencies
     if exist "requirements.txt" (
-        echo %YELLOW%安装依赖...%NC%
+        if defined WT_SESSION (
+            %PRINT_YELLOW% "安装依赖..."
+            %PRINTLN%
+        ) else (
+            %YELLOW%
+            echo 安装依赖...
+            %WHITE%
+        )
         pip install -r requirements.txt
     ) else (
-        echo %RED%未找到 requirements.txt 文件，跳过依赖安装。%NC%
+        if defined WT_SESSION (
+            %PRINT_RED% "未找到 requirements.txt 文件，跳过依赖安装。"
+            %PRINTLN%
+        ) else (
+            %RED%
+            echo 未找到 requirements.txt 文件，跳过依赖安装。
+            %WHITE%
+        )
     )
 
-    :: 安装 Playwright 浏览器（如果需要）
-    echo %YELLOW%安装 Playwright 浏览器...%NC%
+    :: Install Playwright
+    if defined WT_SESSION (
+        %PRINT_YELLOW% "安装 Playwright 浏览器..."
+        %PRINTLN%
+    ) else (
+        %YELLOW%
+        echo 安装 Playwright 浏览器...
+        %WHITE%
+    )
     playwright install chromium
 )
 
-:: 启动项目
-echo %YELLOW%启动项目...%NC%
-call venv\Scripts\python main.py
+:: Start project
+if defined WT_SESSION (
+    %PRINT_YELLOW% "启动项目..."
+    %PRINTLN%
+) else (
+    %YELLOW%
+    echo 启动项目...
+    %WHITE%
+)
+python main.py
 
-:: 退出虚拟环境
-echo %YELLOW%退出虚拟环境...%NC%
-call venv\Scripts\deactivate
+:: Exit virtual environment
+if defined WT_SESSION (
+    %PRINT_YELLOW% "退出虚拟环境..."
+    %PRINTLN%
+) else (
+    %YELLOW%
+    echo 退出虚拟环境...
+    %WHITE%
+)
+deactivate
 
-echo %GREEN%==== 项目运行完毕 ====%NC%
+if defined WT_SESSION (
+    %PRINT_GREEN% "==== 项目运行完毕 ===="
+    %PRINTLN%
+) else (
+    %GREEN%
+    echo ==== 项目运行完毕 ====
+    %WHITE%
+)
+
+if not defined WT_SESSION (
+    echo.
+    echo 提示：安装 Windows Terminal 可获得更好的显示效果
+    echo 可以从 Microsoft Store 安装 Windows Terminal
+)
+pause
+endlocal
