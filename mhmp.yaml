@@ -1,53 +1,62 @@
-# 基础配置
+# Basic Configuration | 基础配置
 base:
-  # 皮肤与外观
-  skins: true            # 启用全皮肤功能
-  random_star_char: false  # 启用随机星标皮肤
-  no_cheering_emotes: true # 禁用应援表情
-  # 功能开关
-  aider: false    # 启用小助手功能（需要手动启动小助手）
-  chest: false    # 启用本地寻觅功能
-  debug: false    # 启用调试模式
-  # 资源更新
-  force_update: false        # 强制更新资源文件
-  cache_version: "" # 当前缓存的资源版本号
+  # Appearance | 外观设置
+  skins: true            # Enable all skins | 启用全皮肤功能
+  random_star_char: false  # Enable random star skins | 启用随机星标皮肤
+  no_cheering_emotes: true # Disable cheering emotes | 禁用应援表情
+  # Features | 功能开关
+  aider: false    # Enable AI assistant (requires manual start) | 启用小助手功能（需手动启动）
+  chest: false    # Enable local search | 启用本地寻觅功能
+  debug: false    # Enable debug mode | 启用调试模式
+  # Resource Update | 资源更新
+  force_update: false     # Force update resources | 强制更新资源文件
+  cache_version: "" # Current cache version | 当前缓存版本号
 
-# 代理服务器配置
+# Proxy Server Configuration | 代理服务器配置
 mitmdump:
   args:
-    http2: false           # 启用 HTTP/2 支持
-    listen_host: 127.0.0.1 # 监听地址
-    listen_port: 7878      # 监听端口
-    mode:                  # 代理模式:
-                          # 1. regular - 默认模式
-                          # 2. upstream:http://127.0.0.1:7890/ - 上游代理模式（适用于网页端加速，7890为clash端口）
-                          # 3. socks5 - SOCKS5模式（适用于客户端）
+    http2: false           # Enable HTTP/2 support | 启用 HTTP/2
+    listen_host: 127.0.0.1 # Listen address | 监听地址
+    listen_port: 7878      # Listen port | 监听端口
+    mode:                  # Proxy mode | 代理模式:
+                          # Note: These modes are mutually exclusive | 注意：以下模式互斥，只能选择其一
+                          # 
+                          # regular - Default mode for web version | 默认模式，适用于网页版
+                          # 
+                          # upstream:http://127.0.0.1:7890/ - Upstream proxy for web acceleration | 上游代理模式，用于网页加速
+                          #   - Only works with web version | 仅适用于网页版
+                          #   - Example shows Clash proxy on port 7890 | 示例使用Clash代理的7890端口
+                          # 
+                          # socks5 - Client version mode | 客户端模式
+                          #   - Required for steam client  | 用于客户端版本
+                          #   - Must enable proxinject | 必须启用proxinject
+                          #   - Must disable playwright | 必须关闭playwright
+                          #   - Cannot use with upstream proxy | 不能与上游代理同时使用
       - regular
   dump:
-    with_dumper: false   # 启用数据包转储
-    with_termlog: true   # 启用终端日志
+    with_dumper: false   # Enable packet dump | 启用数据包转储
+    with_termlog: true   # Enable terminal log | 启用终端日志
 
-# 浏览器自动化配置
+# Browser Automation | 浏览器自动化配置
 playwright:
-  enable: true          # 启用浏览器自动化
+  enable: true          # Enable browser automation | 启用浏览器自动化
   args:
-    width: 1280         # 窗口宽度（注：必须保持16:9比例）
-    height: 720         # 窗口高度
-    moqiedelay: true   # 优化出牌延迟
-  # 自动化功能
-  auto_emotion: false   # 启用自动表情（50%概率，仅支持一姬）
-  lose_weight: false    # 启用降重功能
-  # 自动开始下一局的设置
+    width: 1280         # Window width (16:9 ratio required) | 窗口宽度（需保持16:9比例）
+    height: 720         # Window height | 窗口高度
+    moqiedelay: true   # Optimize play delay | 优化出牌延迟
+  # Automation Features | 自动化功能
+  auto_emotion: false   # Enable auto emotions (50% chance, Ichihime only) | 启用自动表情（50%概率，仅支持一姬）
+  lose_weight: false    # Enable weight reduction | 启用降重功能
+  # Auto Next Game Settings | 自动开始下一局设置
   auto_next_args:
-    next_game_Rank: gold   # 段位场选择: copper/silver/gold/jade/king
-    next_game_number: 4p   # 人数选择: 3p/4p
-    next_game_rounds: south # 对局数选择: east/south
+    next_game_Rank: gold   # Rank selection: copper/silver/gold/jade/king | 段位选择
+    next_game_number: 4p   # Player count: 3p/4p | 人数选择
+    next_game_rounds: south # Round type: east/south | 对局数选择
 
-# 客户端注入配置
+# Client Injection | 客户端注入配置
 proxinject:
-  enable: false    # 启用客户端代理注入
-                   # 注意：启用时需将mitmdump模式改为socks5，并关闭playwright
+  enable: false    # Enable client proxy injection | 启用客户端代理注入
   args:
-    name: jantama_mahjongsoul  # 雀魂客户端进程名
-    set-proxy: 127.0.0.1:7878  # 代理地址（需与mitmdump端口一致）
-  path: proxinject/proxinjector-cli  # 注入器路径
+    name: jantama_mahjongsoul  # Client process name | 客户端进程名
+    set-proxy: 127.0.0.1:7878  # Proxy address | 代理地址
+  path: proxinject/proxinjector-cli  # Injector path | 注入器路径
